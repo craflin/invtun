@@ -1,0 +1,71 @@
+
+targets = {
+
+  all = {
+    dependencies = { "invtunc", "invtuns" }
+  }
+
+  invtunc = cppApplication + {
+    dependencies = { "libnstd" }
+    buildDir = "Build/$(configuration)/Client"
+    output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
+    includePaths = { "Ext/libnstd/include", "Src" }
+    libPaths = { "Build/$(configuration)/libnstd" }
+    libs = { "nstd" }
+    root = { "Src/Client", "Src" }
+    files = {
+      "Src/Client/**.cpp" = cppSource
+      "Src/Client/**.h"
+      "Src/Tools/**.cpp" = cppSource
+      "Src/Tools/**.h"
+      "Src/Protocol.h"
+    }
+    if tool == "vcxproj" {
+      libs += { "ws2_32" }
+      linkFlags += { "/SUBSYSTEM:CONSOLE" }
+    }
+    if platform == "Linux" {
+      libs += { "pthread", "rt" }
+      cppFlags += { "-Wno-delete-non-virtual-dtor" }
+    }
+  }
+  
+  invtuns = cppApplication + {
+    dependencies = { "libnstd" }
+    buildDir = "Build/$(configuration)/Server"
+    output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
+    includePaths = { "Ext/libnstd/include", "Src" }
+    libPaths = { "Build/$(configuration)/libnstd" }
+    libs = { "nstd" }
+    root = { "Src/Server", "Src" }
+    files = {
+      "Src/Server/**.cpp" = cppSource
+      "Src/Server/**.h"
+      "Src/Tools/**.cpp" = cppSource
+      "Src/Tools/**.h"
+      "Src/Protocol.h"
+    }
+    if tool == "vcxproj" {
+      libs += { "ws2_32" }
+      linkFlags += { "/SUBSYSTEM:CONSOLE" }
+    }
+    if platform == "Linux" {
+      libs += { "pthread", "rt" }
+      cppFlags += { "-Wno-delete-non-virtual-dtor" }
+    }
+  }
+  
+  libnstd = cppStaticLibrary + {
+    folder = "Libraries"
+    includePaths = { "Ext/libnstd/include" }
+    buildDir = "Build/$(configuration)/$(target)"
+    root = { "Ext/libnstd/src", "Ext/libnstd/include/nstd" }
+    files = {
+      "Ext/libnstd/src/*.cpp" = cppSource,
+      "Ext/libnstd/include/nstd/*.h"
+    }
+    if tool == "vcxproj" {
+      defines += { "_CRT_SECURE_NO_WARNINGS" }
+    }
+  }
+}
