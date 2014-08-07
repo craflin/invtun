@@ -15,9 +15,12 @@ public:
 private:
   ServerHandler& serverHandler;
   Server::Client& client;
+  bool authed;
 
 private:
   void_t handleMessage(Protocol::MessageType messageType, byte_t* data, size_t size);
+
+  void_t handleConnectMessage(Protocol::ConnectMessage& connect);
 
 private: // Server::Client::Listener
   virtual void_t establish();

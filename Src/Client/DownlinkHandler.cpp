@@ -2,7 +2,7 @@
 #include "DownlinkHandler.h"
 #include "ServerHandler.h"
 
-DownlinkHandler::DownlinkHandler(ServerHandler& serverHandler, Server::Client& client) : serverHandler(serverHandler), client(client)
+DownlinkHandler::DownlinkHandler(ServerHandler& serverHandler, Server::Client& client) : serverHandler(serverHandler), client(client), authed(false)
 {
   client.setListener(this);
 }
@@ -15,7 +15,11 @@ DownlinkHandler::~DownlinkHandler()
 
 void_t DownlinkHandler::establish()
 {
-  // todo: send auth
+  Protocol::AuthMessage authMessage;
+  authMessage.size = sizeof(authMessage);
+  authMessage.messageType = Protocol::auth;
+  Protocol::setString(authMessage.secret, serverHandler.getSecret());
+  client.send((const byte_t*)&authMessage, sizeof(authMessage));
 }
 
 size_t DownlinkHandler::handle(byte_t* data, size_t size)
@@ -71,12 +75,21 @@ void_t DownlinkHandler::handleMessage(Protocol::MessageType messageType, byte_t*
   //  if(authed && size >= sizeof(Protocol::DataMessage))
   //    handleDataMessag(*(Protocol::DataMessage*)data, data + sizeof(Protocol::DataMessage), size - sizeof(Protocol::DataMessage));
   //  break;
+  case Protocol::authResponse:
+    if(!authed)
+      authed = true;
+    break;
   case Protocol::connect:
-    // todo:!
+    if(authed && size >= sizeof(Protocol::ConnectMessage))
+      handleConnectMessage(*(Protocol::ConnectMessage*)data);
     break;
   default:
     break;
   }
+}
+
+void_t DownlinkHandler::handleConnectMessage(Protocol::ConnectMessage& connect)
+{
 }
 
 //bool_t DownlinkHandler::createConnection(uint32_t connectionId, uint32_t addr, uint16_t port)

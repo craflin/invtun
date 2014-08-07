@@ -23,7 +23,7 @@ public:
     uint16_t messageType; // MessageType
   };
 
-  struct AuthMessage
+  struct AuthMessage : public Header
   {
     char_t secret[33];
   };

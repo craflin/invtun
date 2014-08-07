@@ -14,6 +14,8 @@ public:
   ServerHandler(Server& server, uint32_t addr, uint16_t port, const String& secret);
   ~ServerHandler();
 
+  const String& getSecret() const {return secret;}
+
   bool_t connect();
   void_t startReconnectTimer();
 
