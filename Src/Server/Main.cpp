@@ -9,13 +9,16 @@ int_t main(int_t argc, char_t* argv[])
   uint16_t uplinkPort = 1231;
   String secret("Gr33nshoes");
   HashMap<uint16_t, uint16_t> ports;
+  bool_t background = true;
 
   // parse parameters
   for(int i = 1; i < argc; ++i)
   {
     String arg;
     arg.attach(argv[i], String::length(argv[i]));
-    if(!arg.startsWith("-"))
+    if(arg == "-f")
+      background = false;
+    else if(!arg.startsWith("-"))
     {
       uint16_t port = arg.toUInt();
       uint16_t mappedPort = port;
@@ -29,7 +32,7 @@ int_t main(int_t argc, char_t* argv[])
     }
     else
     {
-      Console::errorf("Usage: %s [-f]\n", argv[0]);
+      Console::errorf("Usage: %s <port>[:<mapped port>] [<port>[:<mapped port>] ... ] [-f]\n", argv[0]);
       return -1;
     }
   }

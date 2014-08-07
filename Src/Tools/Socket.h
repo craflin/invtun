@@ -19,6 +19,8 @@ public:
   bool_t close();
   bool_t isOpen() const;
 
+  void_t swap(Socket& other);
+
   bool_t accept(const Socket& from, uint32_t& ip, uint16_t& port);
   bool_t setKeepAlive();
   bool_t setReuseAddress();
@@ -36,10 +38,12 @@ public:
   bool_t getSockName(uint32_t& ip, uint16_t& port);
   bool_t getPeerName(uint32_t& ip, uint16_t& port);
 
+  static void_t setLastError(int_t error);
   static int_t getLastError();
   static String getLastErrorString();
   static String getErrorString(int_t error);
   static uint32_t inetAddr(const String& addr);
+  static String inetNtoA(uint32_t ip);
 
   class Selector
   {
@@ -63,7 +67,11 @@ public:
 
 private:
 #ifdef _WIN32
-  int_t s; // TODO: use correct type
+#ifdef _AMD64
+  uint64_t s;
+#else
+  uint_t s;
+#endif
 #else
   int_t s;
 #endif

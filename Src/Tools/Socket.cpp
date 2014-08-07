@@ -83,6 +83,17 @@ bool_t Socket::isOpen() const
   return (SOCKET)s != INVALID_SOCKET;
 }
 
+void_t Socket::swap(Socket& other)
+{
+#ifdef _WIN32
+  SOCKET tmp = s;
+#else
+  int tmp = s;
+#endif
+  s = other.s;
+  other.s = tmp;
+}
+
 bool_t Socket::accept(const Socket& from, uint32_t& ip, uint16_t& port)
 {
   if((SOCKET)s != INVALID_SOCKET)
@@ -288,6 +299,15 @@ ssize_t Socket::recv(byte_t* data, size_t maxSize, size_t minSize)
   }
 }
 
+void_t Socket::setLastError(int_t error)
+{
+#ifdef _WIN32
+  WSASetLastError(error);
+#else
+  errno = error;
+#endif
+}
+
 int_t Socket::getLastError()
 {
   return ERRNO;
@@ -489,5 +509,12 @@ bool_t Socket::Selector::select(Socket*& socket, uint_t& events, timestamp_t tim
 uint32_t Socket::inetAddr(const String& addr)
 {
   return ntohl(inet_addr((const char_t*)addr));
-  //return inet_addr((const char_t*)addr);
+}
+
+String Socket::inetNtoA(uint32_t ip)
+{
+  in_addr in;
+  in.s_addr = htonl(ip);
+  char* buf = inet_ntoa(in);
+  return String(buf, String::length(buf));
 }
