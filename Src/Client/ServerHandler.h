@@ -6,7 +6,7 @@
 #include "Tools/Server.h"
 
 class DownlinkHandler;
-class UplinkHandler;
+class EndpointHandler;
 
 class ServerHandler : public Server::Listener
 {
@@ -21,7 +21,7 @@ public:
   bool_t createConnection(uint32_t connectionId, uint16_t port);
   bool_t removeConnection(uint32_t connectionId);
   bool_t sendDataToDownlink(uint32_t connectionId, byte_t* data, size_t size);
-  bool_t sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size);
+  bool_t sendDataToEndpoint(uint32_t connectionId, byte_t* data, size_t size);
 
 private:
   Server& server;
@@ -29,7 +29,7 @@ private:
   uint16_t port;
   String secret;
   DownlinkHandler* downlink;
-  HashMap<uint32_t, UplinkHandler*> uplinks;
+  HashMap<uint32_t, EndpointHandler*> endpoints;
 
 private: // Server::Listener
   virtual void_t establishedClient(Server::Client& client);

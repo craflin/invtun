@@ -3,7 +3,7 @@
 #include <nstd/Console.h>
 
 #include "ServerHandler.h"
-#include "UplinkHandler.h"
+#include "EndpointHandler.h"
 #include "DownlinkHandler.h"
 
 ServerHandler::ServerHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) : server(server), addr(addr), port(port), secret(secret)
@@ -14,7 +14,7 @@ ServerHandler::ServerHandler(Server& server, uint32_t addr, uint16_t port, const
 ServerHandler::~ServerHandler()
 {
   server.setListener(0);
-  for(HashMap<uint32_t, UplinkHandler*>::Iterator i = uplinks.begin(), end = uplinks.end(); i != end; ++i)
+  for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
     delete *i;
   delete downlink;
 }
@@ -36,8 +36,8 @@ void_t ServerHandler::establishedClient(Server::Client& client)
     Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
   else
   {
-    UplinkHandler* uplink = (UplinkHandler*)client.getListener();
-    Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), uplink->getPort());
+    EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
+    Console::printf("Established endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
   }
 }
 
@@ -51,19 +51,19 @@ void_t ServerHandler::closedClient(Server::Client& client)
 
     server.addTimer(10 * 1000); // start reconnect timer
 
-    for(HashMap<uint32_t, UplinkHandler*>::Iterator i = uplinks.begin(), end = uplinks.end(); i != end; ++i)
+    for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
       delete *i;
-    uplinks.clear();
+    endpoints.clear();
   }
   else
   {
-    UplinkHandler* uplink = (UplinkHandler*)client.getListener();
-    Console::printf("Closed uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), uplink->getPort());
-    uint32_t connectionId = uplink->getConnectionId();
+    EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
+    Console::printf("Closed endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
+    uint32_t connectionId = endpoint->getConnectionId();
     if(downlink)
       downlink->sendDisconnect(connectionId);
-    uplinks.remove(connectionId);
-    delete uplink;
+    endpoints.remove(connectionId);
+    delete endpoint;
   }
 }
 
@@ -79,13 +79,13 @@ void_t ServerHandler::abolishedClient(Server::Client& client)
   }
   else
   {
-    UplinkHandler* uplink = (UplinkHandler*)client.getListener();
-    Console::printf("Could not establish uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), uplink->getPort());
-    uint32_t connectionId = uplink->getConnectionId();
+    EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
+    Console::printf("Could not establish endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
+    uint32_t connectionId = endpoint->getConnectionId();
     if(downlink)
       downlink->sendDisconnect(connectionId);
-    uplinks.remove(connectionId);
-    delete uplink;
+    endpoints.remove(connectionId);
+    delete endpoint;
   }
 }
 
@@ -104,19 +104,19 @@ bool_t ServerHandler::createConnection(uint32_t connectionId, uint16_t port)
   Server::Client* client = server.connect(Socket::loopbackAddr, port);
   if(!client)
     return false;
-  UplinkHandler* uplinkHandler = new UplinkHandler(*this, *client, connectionId, port);
-  uplinks.append(connectionId, uplinkHandler);
+  EndpointHandler* endpoint = new EndpointHandler(*this, *client, connectionId, port);
+  endpoints.append(connectionId, endpoint);
   return true;
 }
 
 bool_t ServerHandler::removeConnection(uint32_t connectionId)
 {
-  HashMap<uint32_t, UplinkHandler*>::Iterator it = uplinks.find(connectionId);
-  if(it == uplinks.end())
+  HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
+  if(it == endpoints.end())
     return false;
-  UplinkHandler* uplink = *it;
-  uplinks.remove(it);
-  delete uplink;
+  EndpointHandler* endpoint = *it;
+  endpoints.remove(it);
+  delete endpoint;
   return true;
 }
 
@@ -128,12 +128,12 @@ bool_t ServerHandler::sendDataToDownlink(uint32_t connectionId, byte_t* data, si
   return true;
 }
 
-bool_t ServerHandler::sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size)
+bool_t ServerHandler::sendDataToEndpoint(uint32_t connectionId, byte_t* data, size_t size)
 {
-  HashMap<uint32_t, UplinkHandler*>::Iterator it = uplinks.find(connectionId);
-  if(it == uplinks.end())
+  HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
+  if(it == endpoints.end())
     return false;
-  UplinkHandler* uplink = *it;
-  uplink->sendData(data, size);
+  EndpointHandler* endpoint = *it;
+  endpoint->sendData(data, size);
   return true;
 }

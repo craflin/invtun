@@ -113,5 +113,5 @@ void_t DownlinkHandler::handleDisconnectMessage(Protocol::DisconnectMessage& dis
 
 void_t DownlinkHandler::handleDataMessage(Protocol::DataMessage& message, byte_t* data, size_t size)
 {
-  serverHandler.sendDataToUplink(message.connectionId, data, size);
+  serverHandler.sendDataToEndpoint(message.connectionId, data, size);
 }

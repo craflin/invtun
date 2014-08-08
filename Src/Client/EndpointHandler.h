@@ -5,11 +5,11 @@
 
 class ServerHandler;
 
-class UplinkHandler : public Server::Client::Listener
+class EndpointHandler : public Server::Client::Listener
 {
 public:
-  UplinkHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId, uint16_t port);
-  ~UplinkHandler();
+  EndpointHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId, uint16_t port);
+  ~EndpointHandler();
 
   uint32_t getConnectionId() const {return connectionId;}
   uint16_t getPort() const {return port;}
