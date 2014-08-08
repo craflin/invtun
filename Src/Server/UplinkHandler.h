@@ -12,7 +12,8 @@ public:
   UplinkHandler(ServerHandler& serverHandler, Server::Client& client);
   ~UplinkHandler();
 
-  bool_t createConnection(uint32_t connectionId, uint16_t port);
+  bool_t sendConnect(uint32_t connectionId, uint16_t port);
+  bool_t sendDisconnect(uint32_t connectionId);
   bool_t sendData(uint32_t connectionId, const byte_t* data, size_t size);
 
 private:

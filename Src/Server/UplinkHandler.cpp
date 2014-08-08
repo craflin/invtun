@@ -15,7 +15,7 @@ UplinkHandler::~UplinkHandler()
   client.close();
 }
 
-bool_t UplinkHandler::createConnection(uint32_t connectionId, uint16_t port)
+bool_t UplinkHandler::sendConnect(uint32_t connectionId, uint16_t port)
 {
   if(!authed)
     return false;
@@ -26,6 +26,19 @@ bool_t UplinkHandler::createConnection(uint32_t connectionId, uint16_t port)
   connectMessage.connectionId = connectionId;
   connectMessage.port = port;
   client.send((const byte_t*)&connectMessage, sizeof(connectMessage));
+  return true;
+}
+
+bool_t UplinkHandler::sendDisconnect(uint32_t connectionId)
+{
+  if(!authed)
+    return false;
+
+  Protocol::DisconnectMessage disconnectMessage;
+  disconnectMessage.size = sizeof(disconnectMessage);
+  disconnectMessage.messageType = Protocol::disconnect;
+  disconnectMessage.connectionId = connectionId;
+  client.send((const byte_t*)&disconnectMessage, sizeof(disconnectMessage));
   return true;
 }
 
@@ -59,7 +72,7 @@ size_t UplinkHandler::handle(byte_t* data, size_t size)
     }
     if(size < header->size)
       break;
-    handleMessage((Protocol::MessageType)header->messageType, pos + sizeof(Protocol::Header), header->size - sizeof(Protocol::Header));
+    handleMessage((Protocol::MessageType)header->messageType, pos, header->size);
     pos += header->size;
     size -= header->size;
   }

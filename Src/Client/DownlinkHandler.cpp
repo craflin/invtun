@@ -17,6 +17,7 @@ bool_t DownlinkHandler::sendDisconnect(uint32_t connectionId)
 {
   if(!authed)
     return false;
+
   Protocol::DisconnectMessage disconnectMessage;
   disconnectMessage.size = sizeof(disconnectMessage);
   disconnectMessage.messageType = Protocol::disconnect;
@@ -29,6 +30,7 @@ bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t siz
 {
   if(!authed)
     return false;
+
   Protocol::DataMessage dataMessage;
   dataMessage.size = sizeof(dataMessage) + size;
   dataMessage.messageType = Protocol::data;
@@ -63,7 +65,7 @@ size_t DownlinkHandler::handle(byte_t* data, size_t size)
     }
     if(size < header->size)
       break;
-    handleMessage((Protocol::MessageType)header->messageType, pos + sizeof(Protocol::Header), header->size - sizeof(Protocol::Header));
+    handleMessage((Protocol::MessageType)header->messageType, pos, header->size);
     pos += header->size;
     size -= header->size;
   }

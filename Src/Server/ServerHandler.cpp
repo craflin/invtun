@@ -64,11 +64,8 @@ void_t ServerHandler::acceptedClient(Server::Client& client)
   }
   if(localPort == uplinkPort)
   {
-    if(uplink) // there is already an uplink
-    {
-      client.close();
-      return;
-    }
+    //Console::printf("Accepted uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(??), ??);
+    delete uplink;
     uplink = new UplinkHandler(*this, client);
   }
   else
@@ -79,24 +76,24 @@ void_t ServerHandler::acceptedClient(Server::Client& client)
       return;
     }
     uint32_t connectionId = nextConnectionId++;
-    ClientHandler* clientHandler = new ClientHandler(*this, client, connectionId);
-    clients.append(connectionId, clientHandler);
     uint16_t mappedPort = mapPort(localPort);
-    if(!uplink->createConnection(connectionId, mappedPort))
+    if(!uplink->sendConnect(connectionId, mappedPort))
     {
       client.close();
       return;
     }
+    //Console::printf("Accepted entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(??), ??);
+    ClientHandler* clientHandler = new ClientHandler(*this, client, connectionId);
+    clients.append(connectionId, clientHandler);
   }
 }
 
 void_t ServerHandler::closedClient(Server::Client& client)
 {
-  Server::Client::Listener* listener = client.getListener();
-  if(!listener)
-    return;
-  if(listener == uplink)
+  if(client.getListener() == uplink)
   {
+    //Console::printf("Closed uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(??), ??);
+
     delete uplink;
     uplink = 0;
 
@@ -106,8 +103,13 @@ void_t ServerHandler::closedClient(Server::Client& client)
   }
   else
   {
-    ClientHandler* clientHandler = (ClientHandler*)listener;
-    clients.remove(clientHandler->getConnectionId());
+    //Console::printf("Closed entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(??), ??);
+
+    ClientHandler* clientHandler = (ClientHandler*)client.getListener();
+    uint32_t connectionId = clientHandler->getConnectionId();
+    clients.remove(connectionId);
+    if(uplink)
+      uplink->sendDisconnect(connectionId);
     delete clientHandler;
   }
 }
