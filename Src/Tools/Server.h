@@ -32,8 +32,8 @@ public:
     Listener* getListener() const {return listener;}
     void_t reserve(size_t capacity) {socket.reserve(capacity);}
     bool_t send(const byte_t* data, size_t size) {return socket.send(data, size);}
-    bool_t getSockName(uint32_t& ip, uint16_t& port) {return socket.getSockName(ip, port);}
-    bool_t getPeerName(uint32_t& ip, uint16_t& port) {return socket.getPeerName(ip, port);}
+    bool_t getSockName(uint32_t& ip, uint16_t& port) {return socket.getSockName(ip, port);} // local
+    bool_t getPeerName(uint32_t& ip, uint16_t& port) {return socket.getPeerName(ip, port);} // remote
     void_t close() {server.close(socket);}
 
   private:
@@ -71,10 +71,10 @@ public:
   class Listener
   {
   public:
-    virtual void_t acceptedClient(Client& client, uint32_t addr, uint16_t port) {};
-    virtual void_t establishedClient(Client& client, uint32_t addr, uint16_t port) {};
+    virtual void_t acceptedClient(Client& client) {};
+    virtual void_t establishedClient(Client& client) {};
     virtual void_t closedClient(Client& client) {};
-    virtual void_t abolishedClient(uint32_t addr, uint16_t port) {};
+    virtual void_t abolishedClient(Client& client) {};
     virtual void_t executedTimer(Timer& timer) {};
   };
 
@@ -186,7 +186,7 @@ private:
   class ConnectSocket : public CallbackSocket
   {
   public:
-    ConnectSocket(Server& server, uint32_t addr, uint16_t port) : CallbackSocket(server), addr(addr), port(port), clientSocket(new ClientSocket(server)) {}
+    ConnectSocket(Server& server) : CallbackSocket(server), clientSocket(new ClientSocket(server)) {}
     ~ConnectSocket() {delete clientSocket;}
     virtual void_t write()
     {
@@ -199,8 +199,6 @@ private:
         server.abolish(*this);
       }
     }
-    uint32_t addr;
-    uint16_t port;
     ClientSocket* clientSocket;
   };
 
@@ -229,7 +227,7 @@ private:
     selector.set(*clientSocket, Socket::Selector::readEvent);
     clientSockets.append(clientSocket);
     if(listener)
-      listener->acceptedClient(clientSocket->client, addr, port);
+      listener->acceptedClient(clientSocket->client);
     if(clientSocket->client.listener)
       clientSocket->client.listener->establish();
   }
@@ -241,30 +239,31 @@ private:
     selector.remove(socket);
     clientSocket->swap(socket);
     connectSockets.remove(&socket);
+    delete &socket;
     if(!clientSocket->setKeepAlive() ||
        !clientSocket->setNoDelay())
     {
-      delete &socket;
       delete clientSocket;
       return;
     }
     selector.set(*clientSocket, Socket::Selector::readEvent);
     clientSockets.append(clientSocket);
+    Client& client = clientSocket->client;
     if(listener)
-      listener->establishedClient(clientSocket->client, socket.addr, socket.port);
-    delete &socket;
-    if(clientSocket->client.listener)
-      clientSocket->client.listener->establish();
+      listener->establishedClient(client);
+    if(client.listener)
+      client.listener->establish();
   }
 
   void_t abolish(ConnectSocket& socket)
   {
     selector.remove(socket);
     connectSockets.remove(&socket);
-    if(socket.clientSocket->client.listener)
-      socket.clientSocket->client.listener->abolish();
+    Client& client = socket.clientSocket->client;
+    if(client.listener)
+      client.listener->abolish();
     if(listener)
-      listener->abolishedClient(socket.addr, socket.port);
+      listener->abolishedClient(client);
     delete &socket;
   }
 

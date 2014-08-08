@@ -17,7 +17,11 @@ public:
   const String& getSecret() const {return secret;}
 
   bool_t connect();
-  void_t startReconnectTimer();
+  
+  bool_t createConnection(uint32_t connectionId, uint16_t port);
+  bool_t removeConnection(uint32_t connectionId);
+  bool_t sendDataToDownlink(uint32_t connectionId, byte_t* data, size_t size);
+  bool_t sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size);
 
 private:
   Server& server;
@@ -27,13 +31,9 @@ private:
   DownlinkHandler* downlink;
   HashMap<uint32_t, UplinkHandler*> uplinks;
 
-private:
-
-  //bool_t createConnection(uint32_t connectionId, uint32_t addr, uint16_t port);
-
 private: // Server::Listener
-  virtual void_t establishedClient(Server::Client& client, uint32_t addr, uint16_t port);
+  virtual void_t establishedClient(Server::Client& client);
   virtual void_t closedClient(Server::Client& client);
-  virtual void_t abolishedClient(uint32_t addr, uint16_t port);
+  virtual void_t abolishedClient(Server::Client& client);
   virtual void_t executedTimer(Server::Timer& timer);
 };

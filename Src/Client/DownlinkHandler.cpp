@@ -13,6 +13,32 @@ DownlinkHandler::~DownlinkHandler()
   client.close();
 }
 
+bool_t DownlinkHandler::sendDisconnect(uint32_t connectionId)
+{
+  if(!authed)
+    return false;
+  Protocol::DisconnectMessage disconnectMessage;
+  disconnectMessage.size = sizeof(disconnectMessage);
+  disconnectMessage.messageType = Protocol::disconnect;
+  disconnectMessage.connectionId = connectionId;
+  client.send((const byte_t*)&disconnectMessage, sizeof(disconnectMessage));
+  return true;
+}
+
+bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t size)
+{
+  if(!authed)
+    return false;
+  Protocol::DataMessage dataMessage;
+  dataMessage.size = sizeof(dataMessage) + size;
+  dataMessage.messageType = Protocol::data;
+  dataMessage.connectionId = connectionId;
+  client.reserve(dataMessage.size);
+  client.send((const byte_t*)&dataMessage, sizeof(dataMessage));
+  client.send(data, size);
+  return true;
+}
+
 void_t DownlinkHandler::establish()
 {
   Protocol::AuthMessage authMessage;
@@ -49,32 +75,10 @@ size_t DownlinkHandler::handle(byte_t* data, size_t size)
   return pos - data;
 }
 
-void_t DownlinkHandler::close()
-{
-  serverHandler.startReconnectTimer();
-}
-
-void_t DownlinkHandler::abolish()
-{
-  serverHandler.startReconnectTimer();
-}
-
 void_t DownlinkHandler::handleMessage(Protocol::MessageType messageType, byte_t* data, size_t size)
 {
   switch(messageType)
   {
-  //case Protocol::auth:
-  //  if(!authed && size >= sizeof(Protocol::AuthMessage))
-  //    handleAuthMessage(*(Protocol::AuthMessage*)data);
-  //  break;
-  //case Protocol::disconnect:
-  //  if(authed && size >= sizeof(Protocol::DisconnectMessage))
-  //    handleDisconnectMessag(*(Protocol::DisconnectMessage*)data);
-  //  break;
-  //case Protocol::data:
-  //  if(authed && size >= sizeof(Protocol::DataMessage))
-  //    handleDataMessag(*(Protocol::DataMessage*)data, data + sizeof(Protocol::DataMessage), size - sizeof(Protocol::DataMessage));
-  //  break;
   case Protocol::authResponse:
     if(!authed)
       authed = true;
@@ -83,6 +87,14 @@ void_t DownlinkHandler::handleMessage(Protocol::MessageType messageType, byte_t*
     if(authed && size >= sizeof(Protocol::ConnectMessage))
       handleConnectMessage(*(Protocol::ConnectMessage*)data);
     break;
+  case Protocol::disconnect:
+    if(authed && size >= sizeof(Protocol::DisconnectMessage))
+      handleDisconnectMessage(*(Protocol::DisconnectMessage*)data);
+    break;
+  case Protocol::data:
+    if(authed && size >= sizeof(Protocol::DataMessage))
+      handleDataMessage(*(Protocol::DataMessage*)data, data + sizeof(Protocol::DataMessage), size - sizeof(Protocol::DataMessage));
+    break;
   default:
     break;
   }
@@ -90,17 +102,16 @@ void_t DownlinkHandler::handleMessage(Protocol::MessageType messageType, byte_t*
 
 void_t DownlinkHandler::handleConnectMessage(Protocol::ConnectMessage& connect)
 {
+  if(!serverHandler.createConnection(connect.connectionId, connect.port))
+    sendDisconnect(connect.connectionId);
 }
 
-//bool_t DownlinkHandler::createConnection(uint32_t connectionId, uint32_t addr, uint16_t port)
-//{
-//  UplinkHandler* uplinkHandler = new UplinkHandler();
-//  if(!server.connect(addr, port, *uplinkHandler))
-//  {
-//    // todo: send disconnect answer
-//    delete uplinkHandler;
-//    return false;
-//  }
-//  uplinks.append(connectionId, uplinkHandler);
-//  return true;
-//}
+void_t DownlinkHandler::handleDisconnectMessage(Protocol::DisconnectMessage& disconnect)
+{
+  serverHandler.removeConnection(disconnect.connectionId);
+}
+
+void_t DownlinkHandler::handleDataMessage(Protocol::DataMessage& message, byte_t* data, size_t size)
+{
+  serverHandler.sendDataToUplink(message.connectionId, data, size);
+}

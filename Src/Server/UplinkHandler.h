@@ -10,6 +10,7 @@ class UplinkHandler : public Server::Client::Listener
 {
 public:
   UplinkHandler(ServerHandler& serverHandler, Server::Client& client);
+  ~UplinkHandler();
 
   bool_t createConnection(uint32_t connectionId, uint16_t port);
   bool_t sendData(uint32_t connectionId, const byte_t* data, size_t size);
@@ -17,7 +18,7 @@ public:
 private:
   ServerHandler& serverHandler;
   Server::Client& client;
-  bool authed;
+  bool_t authed;
 
 private:
   void_t handleMessage(Protocol::MessageType messageType, byte_t* data, size_t size);
@@ -27,5 +28,5 @@ private:
 
 private: // Server::Client::Listener
   virtual size_t handle(byte_t* data, size_t size);
-  virtual void_t write() {};
+  virtual void_t close() {}
 };

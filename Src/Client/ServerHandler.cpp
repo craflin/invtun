@@ -21,9 +21,8 @@ ServerHandler::~ServerHandler()
 
 bool_t ServerHandler::connect()
 {
-  if(downlink)
-    return false;
-  Console::printf("Establishing downlink connection with %s:%hu...", (const char_t*)Socket::inetNtoA(addr), port);
+  ASSERT(!downlink);
+  Console::printf("Establishing downlink connection with %s:%hu...\n", (const char_t*)Socket::inetNtoA(addr), port);
   Server::Client* client = server.connect(addr, port);
   if(!client)
     return false;
@@ -31,45 +30,110 @@ bool_t ServerHandler::connect()
   return true;
 }
 
-void_t ServerHandler::establishedClient(Server::Client& client, uint32_t addr, uint16_t port)
+void_t ServerHandler::establishedClient(Server::Client& client)
 {
-  Console::printf("Established connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
+  if(client.getListener() == downlink)
+    Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+  else
+  {
+    UplinkHandler* uplink = (UplinkHandler*)client.getListener();
+    Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), uplink->getPort());
+  }
 }
 
 void_t ServerHandler::closedClient(Server::Client& client)
 {
-  Console::printf("Closed connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
+  if(client.getListener() == downlink)
+  {
+    Console::printf("Closed downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+    delete downlink;
+    downlink = 0;
+
+    server.addTimer(10 * 1000); // start reconnect timer
+
+    for(HashMap<uint32_t, UplinkHandler*>::Iterator i = uplinks.begin(), end = uplinks.end(); i != end; ++i)
+      delete *i;
+    uplinks.clear();
+  }
+  else
+  {
+    UplinkHandler* uplink = (UplinkHandler*)client.getListener();
+    Console::printf("Closed uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), uplink->getPort());
+    uint32_t connectionId = uplink->getConnectionId();
+    if(downlink)
+      downlink->sendDisconnect(connectionId);
+    uplinks.remove(connectionId);
+    delete uplink;
+  }
 }
 
-void_t ServerHandler::abolishedClient(uint32_t addr, uint16_t port)
+void_t ServerHandler::abolishedClient(Server::Client& client)
 {
-  Console::printf("Could not establish connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
+  if(client.getListener() == downlink)
+  {
+    Console::printf("Could not establish downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+    delete downlink;
+    downlink = 0;
+
+    server.addTimer(10 * 1000); // start reconnect timer
+  }
+  else
+  {
+    UplinkHandler* uplink = (UplinkHandler*)client.getListener();
+    Console::printf("Could not establish uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), uplink->getPort());
+    uint32_t connectionId = uplink->getConnectionId();
+    if(downlink)
+      downlink->sendDisconnect(connectionId);
+    uplinks.remove(connectionId);
+    delete uplink;
+  }
 }
 
 void_t ServerHandler::executedTimer(Server::Timer& timer)
 {
-  Console::printf("Executed timer");
+  Console::printf("Executed timer\n");
   ASSERT(!downlink);
   if(!connect())
-    startReconnectTimer();
+    server.addTimer(10 * 1000);
 }
 
-void_t ServerHandler::startReconnectTimer()
+bool_t ServerHandler::createConnection(uint32_t connectionId, uint16_t port)
 {
-  delete downlink;
-  downlink = 0;
-  server.addTimer(10 * 1000);
+  if(!downlink)
+    return false;
+  Server::Client* client = server.connect(Socket::loopbackAddr, port);
+  if(!client)
+    return false;
+  UplinkHandler* uplinkHandler = new UplinkHandler(*this, *client, connectionId, port);
+  uplinks.append(connectionId, uplinkHandler);
+  return true;
 }
 
-//bool_t ServerHandler::createConnection(uint32_t connectionId, uint32_t addr, uint16_t port)
-//{
-//  UplinkHandler* uplinkHandler = new UplinkHandler();
-//  if(!server.connect(addr, port, *uplinkHandler))
-//  {
-//    // todo: send disconnect answer
-//    delete uplinkHandler;
-//    return false;
-//  }
-//  uplinks.append(connectionId, uplinkHandler);
-//  return true;
-//}
+bool_t ServerHandler::removeConnection(uint32_t connectionId)
+{
+  HashMap<uint32_t, UplinkHandler*>::Iterator it = uplinks.find(connectionId);
+  if(it == uplinks.end())
+    return false;
+  UplinkHandler* uplink = *it;
+  uplinks.remove(it);
+  delete uplink;
+  return true;
+}
+
+bool_t ServerHandler::sendDataToDownlink(uint32_t connectionId, byte_t* data, size_t size)
+{
+  if(!downlink)
+    return false;
+  downlink->sendData(connectionId, data, size);
+  return true;
+}
+
+bool_t ServerHandler::sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size)
+{
+  HashMap<uint32_t, UplinkHandler*>::Iterator it = uplinks.find(connectionId);
+  if(it == uplinks.end())
+    return false;
+  UplinkHandler* uplink = *it;
+  uplink->sendData(data, size);
+  return true;
+}

@@ -31,7 +31,7 @@ bool_t Server::listen(uint16_t port)
 
 Server::Client* Server::connect(uint32_t addr, uint16_t port)
 {
-  ConnectSocket* socket = new ConnectSocket(*this, addr, port);
+  ConnectSocket* socket = new ConnectSocket(*this);
   if(!socket->open() ||
       !socket->setNonBlocking() ||
       !socket->connect(addr, port))

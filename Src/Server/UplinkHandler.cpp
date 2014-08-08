@@ -4,7 +4,16 @@
 #include "ClientHandler.h"
 
 UplinkHandler::UplinkHandler(ServerHandler& serverHandler, Server::Client& client) :
-  serverHandler(serverHandler), client(client), authed(false) {}
+  serverHandler(serverHandler), client(client), authed(false)
+{
+  client.setListener(this);
+}
+
+UplinkHandler::~UplinkHandler()
+{
+  client.setListener(0);
+  client.close();
+}
 
 bool_t UplinkHandler::createConnection(uint32_t connectionId, uint16_t port)
 {
@@ -99,16 +108,10 @@ void_t UplinkHandler::handleAuthMessage(Protocol::AuthMessage& authMessage)
 
 void_t UplinkHandler::handleDisconnectMessag(Protocol::DisconnectMessage& disconnectMessage)
 {
-  ClientHandler* client = serverHandler.getClient(disconnectMessage.connectionId);
-  if(!client)
-    return;
-  client->close();
+  serverHandler.removeClient(disconnectMessage.connectionId);
 }
 
 void_t UplinkHandler::handleDataMessag(Protocol::DataMessage& dataMessage, byte_t* data, size_t size)
 {
-  ClientHandler* client = serverHandler.getClient(dataMessage.connectionId);
-  if(!client)
-    return;
-  client->sendData(data, size);
+  serverHandler.sendDataToClient(dataMessage.connectionId, data, size);
 }
