@@ -6,8 +6,8 @@
 
 #include "Tools/Server.h"
 
+class EntryHandler;
 class UplinkHandler;
-class ClientHandler;
 
 class ServerHandler : public Server::Listener
 {
@@ -18,14 +18,14 @@ public:
   const String& getSecret() const {return secret;}
 
   bool_t removeClient(uint32_t connectionId);
-  bool_t sendDataToClient(uint32_t connectionId, byte_t* data, size_t size);
+  bool_t sendDataToEntry(uint32_t connectionId, byte_t* data, size_t size);
   bool_t sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size);
 
 private:
   uint16_t uplinkPort;
   String secret;
   UplinkHandler* uplink;
-  HashMap<uint32_t, ClientHandler*> clients;
+  HashMap<uint32_t, EntryHandler*> entries;
   HashMap<uint16_t, uint16_t> portMapping;
   uint32_t nextConnectionId;
 

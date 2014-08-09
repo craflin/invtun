@@ -1,7 +1,7 @@
 
 #include "UplinkHandler.h"
 #include "ServerHandler.h"
-#include "ClientHandler.h"
+#include "EntryHandler.h"
 
 UplinkHandler::UplinkHandler(ServerHandler& serverHandler, Server::Client& client) :
   serverHandler(serverHandler), client(client), authed(false)
@@ -126,5 +126,5 @@ void_t UplinkHandler::handleDisconnectMessag(Protocol::DisconnectMessage& discon
 
 void_t UplinkHandler::handleDataMessag(Protocol::DataMessage& dataMessage, byte_t* data, size_t size)
 {
-  serverHandler.sendDataToClient(dataMessage.connectionId, data, size);
+  serverHandler.sendDataToEntry(dataMessage.connectionId, data, size);
 }

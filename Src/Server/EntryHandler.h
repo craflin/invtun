@@ -5,11 +5,11 @@
 
 class ServerHandler;
 
-class ClientHandler : public Server::Client::Listener
+class EntryHandler : public Server::Client::Listener
 {
 public:
-  ClientHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId);
-  ~ClientHandler();
+  EntryHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId);
+  ~EntryHandler();
 
   uint32_t getConnectionId() const {return connectionId;}
 
