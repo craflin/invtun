@@ -4,19 +4,19 @@
 #include "Tools/Server.h"
 #include "Protocol.h"
 
-class ServerHandler;
+class ClientHandler;
 
 class DownlinkHandler : public Server::Client::Listener
 {
 public:
-  DownlinkHandler(ServerHandler& serverHandler, Server::Client& client);
+  DownlinkHandler(ClientHandler& clientHandler, Server::Client& client);
   ~DownlinkHandler();
 
   bool_t sendDisconnect(uint32_t connectionId);
   bool_t sendData(uint32_t connectionId, byte_t* data, size_t size);
 
 private:
-  ServerHandler& serverHandler;
+  ClientHandler& clientHandler;
   Server::Client& client;
   bool_t authed;
 

@@ -3,12 +3,12 @@
 
 #include "Tools/Server.h"
 
-class ServerHandler;
+class ClientHandler;
 
 class EndpointHandler : public Server::Client::Listener
 {
 public:
-  EndpointHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId);
+  EndpointHandler(ClientHandler& clientHandler, Server::Client& client, uint32_t connectionId);
   ~EndpointHandler();
 
   uint32_t getConnectionId() const {return connectionId;}
@@ -16,7 +16,7 @@ public:
   void_t sendData(byte_t* data, size_t size);
 
 private:
-  ServerHandler& serverHandler;
+  ClientHandler& clientHandler;
   Server::Client& client;
   uint32_t connectionId;
   bool_t connected;

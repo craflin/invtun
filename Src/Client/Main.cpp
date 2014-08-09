@@ -3,7 +3,7 @@
 #include <nstd/Console.h>
 
 #include "Tools/Server.h"
-#include "ServerHandler.h"
+#include "ClientHandler.h"
 
 int_t main(int_t argc, char_t* argv[])
 {
@@ -64,8 +64,8 @@ int_t main(int_t argc, char_t* argv[])
 
   // start select loop
   Server server;
-  ServerHandler serverHandler(server, Socket::inetAddr(address), uplinkPort, secret);
-  if(!serverHandler.connect())
+  ClientHandler clientHandler(server, Socket::inetAddr(address), uplinkPort, secret);
+  if(!clientHandler.connect())
   {
     Console::errorf("error: Could not connect to %s:%hu: %s\n", (const char_t*)address, uplinkPort, (const char_t*)Socket::getLastErrorString());
     return -1;

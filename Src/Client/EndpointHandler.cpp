@@ -1,8 +1,8 @@
 
 #include "EndpointHandler.h"
-#include "ServerHandler.h"
+#include "ClientHandler.h"
 
-EndpointHandler::EndpointHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId) : serverHandler(serverHandler), client(client), connectionId(connectionId), connected(false)
+EndpointHandler::EndpointHandler(ClientHandler& clientHandler, Server::Client& client, uint32_t connectionId) : clientHandler(clientHandler), client(client), connectionId(connectionId), connected(false)
 {
   client.setListener(this);
 }
@@ -30,7 +30,7 @@ void_t EndpointHandler::establish()
 
 size_t EndpointHandler::handle(byte_t* data, size_t size)
 {
-  if(!serverHandler.sendDataToDownlink(connectionId, data, size))
+  if(!clientHandler.sendDataToDownlink(connectionId, data, size))
     client.close();
   return size;
 }

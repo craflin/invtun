@@ -8,11 +8,11 @@
 class DownlinkHandler;
 class EndpointHandler;
 
-class ServerHandler : public Server::Listener
+class ClientHandler : public Server::Listener
 {
 public:
-  ServerHandler(Server& server, uint32_t addr, uint16_t port, const String& secret);
-  ~ServerHandler();
+  ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret);
+  ~ClientHandler();
 
   const String& getSecret() const {return secret;}
 

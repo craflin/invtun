@@ -1,8 +1,8 @@
 
 #include "DownlinkHandler.h"
-#include "ServerHandler.h"
+#include "ClientHandler.h"
 
-DownlinkHandler::DownlinkHandler(ServerHandler& serverHandler, Server::Client& client) : serverHandler(serverHandler), client(client), authed(false)
+DownlinkHandler::DownlinkHandler(ClientHandler& clientHandler, Server::Client& client) : clientHandler(clientHandler), client(client), authed(false)
 {
   client.setListener(this);
 }
@@ -46,7 +46,7 @@ void_t DownlinkHandler::establish()
   Protocol::AuthMessage authMessage;
   authMessage.size = sizeof(authMessage);
   authMessage.messageType = Protocol::auth;
-  Protocol::setString(authMessage.secret, serverHandler.getSecret());
+  Protocol::setString(authMessage.secret, clientHandler.getSecret());
   client.send((const byte_t*)&authMessage, sizeof(authMessage));
 }
 
@@ -104,16 +104,16 @@ void_t DownlinkHandler::handleMessage(Protocol::MessageType messageType, byte_t*
 
 void_t DownlinkHandler::handleConnectMessage(Protocol::ConnectMessage& connect)
 {
-  if(!serverHandler.createConnection(connect.connectionId, connect.port))
+  if(!clientHandler.createConnection(connect.connectionId, connect.port))
     sendDisconnect(connect.connectionId);
 }
 
 void_t DownlinkHandler::handleDisconnectMessage(Protocol::DisconnectMessage& disconnect)
 {
-  serverHandler.removeConnection(disconnect.connectionId);
+  clientHandler.removeConnection(disconnect.connectionId);
 }
 
 void_t DownlinkHandler::handleDataMessage(Protocol::DataMessage& message, byte_t* data, size_t size)
 {
-  serverHandler.sendDataToEndpoint(message.connectionId, data, size);
+  clientHandler.sendDataToEndpoint(message.connectionId, data, size);
 }

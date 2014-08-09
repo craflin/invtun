@@ -2,16 +2,16 @@
 #include <nstd/Thread.h>
 #include <nstd/Console.h>
 
-#include "ServerHandler.h"
+#include "ClientHandler.h"
 #include "EndpointHandler.h"
 #include "DownlinkHandler.h"
 
-ServerHandler::ServerHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) : server(server), addr(addr), port(port), secret(secret)
+ClientHandler::ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) : server(server), addr(addr), port(port), secret(secret)
 {
   server.setListener(this);
 }
 
-ServerHandler::~ServerHandler()
+ClientHandler::~ClientHandler()
 {
   server.setListener(0);
   for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
@@ -19,7 +19,7 @@ ServerHandler::~ServerHandler()
   delete downlink;
 }
 
-bool_t ServerHandler::connect()
+bool_t ClientHandler::connect()
 {
   ASSERT(!downlink);
   Console::printf("Establishing downlink connection with %s:%hu...\n", (const char_t*)Socket::inetNtoA(addr), port);
@@ -30,7 +30,7 @@ bool_t ServerHandler::connect()
   return true;
 }
 
-void_t ServerHandler::establishedClient(Server::Client& client)
+void_t ClientHandler::establishedClient(Server::Client& client)
 {
   if(client.getListener() == downlink)
     Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
@@ -40,7 +40,7 @@ void_t ServerHandler::establishedClient(Server::Client& client)
   }
 }
 
-void_t ServerHandler::closedClient(Server::Client& client)
+void_t ClientHandler::closedClient(Server::Client& client)
 {
   if(client.getListener() == downlink)
   {
@@ -66,7 +66,7 @@ void_t ServerHandler::closedClient(Server::Client& client)
   }
 }
 
-void_t ServerHandler::abolishedClient(Server::Client& client)
+void_t ClientHandler::abolishedClient(Server::Client& client)
 {
   if(client.getListener() == downlink)
   {
@@ -88,7 +88,7 @@ void_t ServerHandler::abolishedClient(Server::Client& client)
   }
 }
 
-void_t ServerHandler::executedTimer(Server::Timer& timer)
+void_t ClientHandler::executedTimer(Server::Timer& timer)
 {
   Console::printf("Executed timer\n");
   ASSERT(!downlink);
@@ -96,7 +96,7 @@ void_t ServerHandler::executedTimer(Server::Timer& timer)
     server.addTimer(10 * 1000);
 }
 
-bool_t ServerHandler::createConnection(uint32_t connectionId, uint16_t port)
+bool_t ClientHandler::createConnection(uint32_t connectionId, uint16_t port)
 {
   if(!downlink)
     return false;
@@ -108,7 +108,7 @@ bool_t ServerHandler::createConnection(uint32_t connectionId, uint16_t port)
   return true;
 }
 
-bool_t ServerHandler::removeConnection(uint32_t connectionId)
+bool_t ClientHandler::removeConnection(uint32_t connectionId)
 {
   HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
   if(it == endpoints.end())
@@ -119,7 +119,7 @@ bool_t ServerHandler::removeConnection(uint32_t connectionId)
   return true;
 }
 
-bool_t ServerHandler::sendDataToDownlink(uint32_t connectionId, byte_t* data, size_t size)
+bool_t ClientHandler::sendDataToDownlink(uint32_t connectionId, byte_t* data, size_t size)
 {
   if(!downlink)
     return false;
@@ -127,7 +127,7 @@ bool_t ServerHandler::sendDataToDownlink(uint32_t connectionId, byte_t* data, si
   return true;
 }
 
-bool_t ServerHandler::sendDataToEndpoint(uint32_t connectionId, byte_t* data, size_t size)
+bool_t ClientHandler::sendDataToEndpoint(uint32_t connectionId, byte_t* data, size_t size)
 {
   HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
   if(it == endpoints.end())
