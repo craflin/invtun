@@ -8,11 +8,10 @@ class ServerHandler;
 class EndpointHandler : public Server::Client::Listener
 {
 public:
-  EndpointHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId, uint16_t port);
+  EndpointHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId);
   ~EndpointHandler();
 
   uint32_t getConnectionId() const {return connectionId;}
-  uint16_t getPort() const {return port;}
 
   void_t sendData(byte_t* data, size_t size);
 
@@ -20,7 +19,6 @@ private:
   ServerHandler& serverHandler;
   Server::Client& client;
   uint32_t connectionId;
-  uint16_t port;
   bool_t connected;
   Buffer sendBuffer;
 

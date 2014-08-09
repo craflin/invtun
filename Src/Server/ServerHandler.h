@@ -33,6 +33,6 @@ private:
   uint16_t mapPort(uint16_t port);
 
 private: // Server::Listener
-  virtual void_t acceptedClient(Server::Client& client);
+  virtual void_t acceptedClient(Server::Client& client, uint16_t localPort);
   virtual void_t closedClient(Server::Client& client);
 };

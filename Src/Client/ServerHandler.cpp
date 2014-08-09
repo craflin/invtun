@@ -33,11 +33,10 @@ bool_t ServerHandler::connect()
 void_t ServerHandler::establishedClient(Server::Client& client)
 {
   if(client.getListener() == downlink)
-    Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+    Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
   else
   {
-    EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
-    Console::printf("Established endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
+    Console::printf("Established endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
   }
 }
 
@@ -45,7 +44,7 @@ void_t ServerHandler::closedClient(Server::Client& client)
 {
   if(client.getListener() == downlink)
   {
-    Console::printf("Closed downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+    Console::printf("Closed downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
     delete downlink;
     downlink = 0;
 
@@ -57,8 +56,8 @@ void_t ServerHandler::closedClient(Server::Client& client)
   }
   else
   {
+    Console::printf("Closed endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
     EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
-    Console::printf("Closed endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
     uint32_t connectionId = endpoint->getConnectionId();
     if(downlink)
       downlink->sendDisconnect(connectionId);
@@ -71,7 +70,7 @@ void_t ServerHandler::abolishedClient(Server::Client& client)
 {
   if(client.getListener() == downlink)
   {
-    Console::printf("Could not establish downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+    Console::printf("Could not establish downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
     delete downlink;
     downlink = 0;
 
@@ -80,7 +79,7 @@ void_t ServerHandler::abolishedClient(Server::Client& client)
   else
   {
     EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
-    Console::printf("Could not establish endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
+    Console::printf("Could not establish endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
     uint32_t connectionId = endpoint->getConnectionId();
     if(downlink)
       downlink->sendDisconnect(connectionId);
@@ -104,7 +103,7 @@ bool_t ServerHandler::createConnection(uint32_t connectionId, uint16_t port)
   Server::Client* client = server.connect(Socket::loopbackAddr, port);
   if(!client)
     return false;
-  EndpointHandler* endpoint = new EndpointHandler(*this, *client, connectionId, port);
+  EndpointHandler* endpoint = new EndpointHandler(*this, *client, connectionId);
   endpoints.append(connectionId, endpoint);
   return true;
 }

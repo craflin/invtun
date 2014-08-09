@@ -15,7 +15,7 @@ Server::~Server()
 
 bool_t Server::listen(uint16_t port)
 {
-  ServerSocket* socket = new ServerSocket(*this);
+  ServerSocket* socket = new ServerSocket(*this, port);
   if(!socket->open() ||
       !socket->setReuseAddress() ||
       !socket->bind(Socket::anyAddr, port) ||
@@ -41,7 +41,10 @@ Server::Client* Server::connect(uint32_t addr, uint16_t port)
   }
   selector.set(*socket, Socket::Selector::writeEvent);
   connectSockets.append(socket);
-  return &socket->clientSocket->client;
+  Client& client = socket->clientSocket->client;
+  client.addr = addr;
+  client.port = port;
+  return &client;
 }
 
 Server::Timer& Server::addTimer(timestamp_t interval)

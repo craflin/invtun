@@ -1,4 +1,6 @@
 
+#include <nstd/Console.h>
+
 #include "ServerHandler.h"
 #include "UplinkHandler.h"
 #include "ClientHandler.h"
@@ -53,18 +55,11 @@ uint16_t ServerHandler::mapPort(uint16_t port)
   return *it;
 }
 
-void_t ServerHandler::acceptedClient(Server::Client& client)
+void_t ServerHandler::acceptedClient(Server::Client& client, uint16_t localPort)
 {
-  uint32_t localIp;
-  uint16_t localPort;
-  if(!client.getSockName(localIp, localPort))
-  {
-    client.close();
-    return;
-  }
   if(localPort == uplinkPort)
   {
-    //Console::printf("Accepted uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(??), ??);
+    Console::printf("Accepted uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
     delete uplink;
     uplink = new UplinkHandler(*this, client);
   }
@@ -82,7 +77,7 @@ void_t ServerHandler::acceptedClient(Server::Client& client)
       client.close();
       return;
     }
-    //Console::printf("Accepted entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(??), ??);
+    Console::printf("Accepted entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
     ClientHandler* clientHandler = new ClientHandler(*this, client, connectionId);
     clients.append(connectionId, clientHandler);
   }
@@ -92,7 +87,7 @@ void_t ServerHandler::closedClient(Server::Client& client)
 {
   if(client.getListener() == uplink)
   {
-    //Console::printf("Closed uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(??), ??);
+    Console::printf("Closed uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
 
     delete uplink;
     uplink = 0;
@@ -103,7 +98,7 @@ void_t ServerHandler::closedClient(Server::Client& client)
   }
   else
   {
-    //Console::printf("Closed entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(??), ??);
+    Console::printf("Closed entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
 
     ClientHandler* clientHandler = (ClientHandler*)client.getListener();
     uint32_t connectionId = clientHandler->getConnectionId();

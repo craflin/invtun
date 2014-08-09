@@ -32,9 +32,9 @@ public:
     Listener* getListener() const {return listener;}
     void_t reserve(size_t capacity) {socket.reserve(capacity);}
     bool_t send(const byte_t* data, size_t size) {return socket.send(data, size);}
-    bool_t getSockName(uint32_t& ip, uint16_t& port) {return socket.getSockName(ip, port);} // local
-    bool_t getPeerName(uint32_t& ip, uint16_t& port) {return socket.getPeerName(ip, port);} // remote
     void_t close() {server.close(socket);}
+    uint32_t getAddr() const {return addr;}
+    uint16_t getPort() const {return port;}
 
   private:
     Client(Server& server, Server::ClientSocket& socket) : listener(0), server(server), socket(socket) {}
@@ -42,6 +42,8 @@ public:
     Listener* listener;
     Server& server;
     Server::ClientSocket& socket;
+    uint32_t addr;
+    uint16_t port;
 
     friend class Server;
   };
@@ -71,7 +73,7 @@ public:
   class Listener
   {
   public:
-    virtual void_t acceptedClient(Client& client) {};
+    virtual void_t acceptedClient(Client& client, uint16_t localPort) {};
     virtual void_t establishedClient(Client& client) {};
     virtual void_t closedClient(Client& client) {};
     virtual void_t abolishedClient(Client& client) {};
@@ -179,8 +181,9 @@ private:
   class ServerSocket : public CallbackSocket
   {
   public:
-    ServerSocket(Server& server) : CallbackSocket(server) {}
+    ServerSocket(Server& server, uint16_t port) : CallbackSocket(server), port(port) {}
     virtual void_t read() {server.accept(*this);}
+    uint16_t port;
   };
 
   class ConnectSocket : public CallbackSocket
@@ -214,9 +217,8 @@ private:
   void_t accept(ServerSocket& socket)
   {
     ClientSocket* clientSocket = new ClientSocket(*this);
-    uint32_t addr;
-    uint16_t port;
-    if(!clientSocket->accept(socket, addr, port) ||
+    Client& client = clientSocket->client;
+    if(!clientSocket->accept(socket, client.addr, client.port) ||
        !clientSocket->setNonBlocking() ||
        !clientSocket->setKeepAlive() ||
        !clientSocket->setNoDelay())
@@ -227,9 +229,9 @@ private:
     selector.set(*clientSocket, Socket::Selector::readEvent);
     clientSockets.append(clientSocket);
     if(listener)
-      listener->acceptedClient(clientSocket->client);
-    if(clientSocket->client.listener)
-      clientSocket->client.listener->establish();
+      listener->acceptedClient(client, socket.port);
+    if(client.listener)
+      client.listener->establish();
   }
 
   void_t establish(ConnectSocket& socket)
