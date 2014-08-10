@@ -80,7 +80,7 @@ int_t main(int_t argc, char_t* argv[])
     Console::errorf("error: Could not listen on port %hu: %s\n", uplinkPort, (const char_t*)Socket::getLastErrorString());
     return -1;
   }
-  Console::printf("Listening for uplink on port %hu.\n", uplinkPort);
+  Console::printf("Listening for uplink on port %hu...\n", uplinkPort);
   for (HashMap<uint16_t, uint16_t>::Iterator i = ports.begin(), end = ports.end(); i != end; ++i)
   {
     uint16_t port = *i;
@@ -89,7 +89,7 @@ int_t main(int_t argc, char_t* argv[])
       Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getLastErrorString());
       return -1;
     }
-    Console::printf("Listening for clients on port %hu.\n", port);
+    Console::printf("Listening for entries on port %hu...\n", port);
   }
   if(!server.process())
   {

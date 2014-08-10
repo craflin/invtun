@@ -202,6 +202,7 @@ private:
         server.abolish(*this);
       }
     }
+    //virtual void_t read() {write();}
     ClientSocket* clientSocket;
   };
 

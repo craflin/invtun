@@ -39,7 +39,7 @@ Server::Client* Server::connect(uint32_t addr, uint16_t port)
     delete socket;
     return 0;
   }
-  selector.set(*socket, Socket::Selector::writeEvent);
+  selector.set(*socket, /*Socket::Selector::readEvent | */Socket::Selector::writeEvent);
   connectSockets.append(socket);
   Client& client = socket->clientSocket->client;
   client.addr = addr;

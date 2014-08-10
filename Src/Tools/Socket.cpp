@@ -457,13 +457,11 @@ bool_t Socket::Selector::select(Socket*& socket, uint_t& events, timestamp_t tim
     fd_set writefds = p->writefds;
     timeval tv = { (long)(timeout / 1000L), (long)((timeout % 1000LL)) * 1000L };
     //Console::printf("select: readfds=%u, writefds=%u\n", readfds.fd_count, writefds.fd_count);
-    int selectionCount =  ::select(
 #ifdef _WIN32
-      0
+    int selectionCount = p->sockets.isEmpty() ? (Sleep((DWORD)timeout), 0) : ::select(0, &readfds, &writefds, 0, &tv);
 #else
-      p->nfds
+    int selectionCount = ::select(p->nfds, &readfds, &writefds, 0, &tv);
 #endif
-      , &readfds, &writefds, 0, &tv);
     if(selectionCount == SOCKET_ERROR)
       return false;
     if(selectionCount > 0)

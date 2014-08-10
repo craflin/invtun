@@ -6,7 +6,7 @@
 #include "EndpointHandler.h"
 #include "DownlinkHandler.h"
 
-ClientHandler::ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) : server(server), addr(addr), port(port), secret(secret)
+ClientHandler::ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) : server(server), addr(addr), port(port), secret(secret), downlink(0)
 {
   server.setListener(this);
 }
