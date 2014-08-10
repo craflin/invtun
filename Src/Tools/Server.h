@@ -106,6 +106,7 @@ private:
   public:
     virtual void_t read() {};
     virtual void_t write() {};
+    virtual void_t except() {};
   };
 
   class ClientSocket : public CallbackSocket
@@ -193,16 +194,21 @@ private:
     ~ConnectSocket() {delete clientSocket;}
     virtual void_t write()
     {
-      int err = getAndResetErrorStatus();
-      if(err == 0)
+      //int err = getAndResetErrorStatus();
+      //if(err == 0)
         server.establish(*this);
-      else
-      {
-        Socket::setLastError(err);
-        server.abolish(*this);
-      }
+      //else
+      //{
+      //  Socket::setLastError(err);
+      //  server.abolish(*this);
+      //}
     }
-    //virtual void_t read() {write();}
+    virtual void_t except()
+    {
+      int err = getAndResetErrorStatus();
+      Socket::setLastError(err);
+      server.abolish(*this);
+    }
     ClientSocket* clientSocket;
   };
 

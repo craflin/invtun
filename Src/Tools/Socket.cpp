@@ -85,11 +85,7 @@ bool_t Socket::isOpen() const
 
 void_t Socket::swap(Socket& other)
 {
-#ifdef _WIN32
   SOCKET tmp = s;
-#else
-  int tmp = s;
-#endif
   s = other.s;
   other.s = tmp;
 }
@@ -345,6 +341,7 @@ struct SocketSelectorPrivate
 {
   fd_set readfds;
   fd_set writefds;
+  fd_set exceptfds;
 #ifndef _WIN32
   int nfds;
 #endif
@@ -364,6 +361,7 @@ Socket::Selector::Selector()
   data = p = new SocketSelectorPrivate;
   FD_ZERO(&p->readfds);
   FD_ZERO(&p->writefds);
+  FD_ZERO(&p->exceptfds);
 #ifndef _WIN32
   p->nfds = 0;
 #endif
@@ -396,6 +394,13 @@ void_t Socket::Selector::set(Socket& socket, uint_t events)
       else
         FD_CLR(s, &p->writefds);
     }
+    if(changedEvents & Socket::Selector::exceptEvent)
+    {
+      if(events & Socket::Selector::exceptEvent)
+        FD_SET(s, &p->exceptfds);
+      else
+        FD_CLR(s, &p->exceptfds);
+    }
     socketInfo.events = events;
   }
   else
@@ -404,6 +409,8 @@ void_t Socket::Selector::set(Socket& socket, uint_t events)
       FD_SET(s, &p->readfds);
     if(events & Socket::Selector::writeEvent)
       FD_SET(s, &p->writefds);
+    if(events & Socket::Selector::exceptEvent)
+      FD_SET(s, &p->exceptfds);
     SocketSelectorPrivate::SocketInfo socketInfo = { &socket, events };
     p->socketInfo.append(s, socketInfo);
     p->sockets.append(s);
@@ -426,6 +433,8 @@ void_t Socket::Selector::remove(Socket& socket)
     FD_CLR((SOCKET)socket.s, &p->readfds);
   if(events & Socket::Selector::writeEvent)
     FD_CLR((SOCKET)socket.s, &p->writefds);
+  if(events & Socket::Selector::exceptEvent)
+    FD_CLR((SOCKET)socket.s, &p->exceptfds);
   p->socketInfo.remove(it);
   p->selectedSockets.remove(&socket);
   for(SOCKET* i = p->sockets, * end = i + p->sockets.size(); i < end; ++i)
@@ -455,12 +464,13 @@ bool_t Socket::Selector::select(Socket*& socket, uint_t& events, timestamp_t tim
   {
     fd_set readfds = p->readfds;
     fd_set writefds = p->writefds;
+    fd_set exceptfds = p->exceptfds;
     timeval tv = { (long)(timeout / 1000L), (long)((timeout % 1000LL)) * 1000L };
     //Console::printf("select: readfds=%u, writefds=%u\n", readfds.fd_count, writefds.fd_count);
 #ifdef _WIN32
-    int selectionCount = p->sockets.isEmpty() ? (Sleep((DWORD)timeout), 0) : ::select(0, &readfds, &writefds, 0, &tv);
+    int selectionCount = p->sockets.isEmpty() ? (Sleep((DWORD)timeout), 0) : ::select(0, &readfds, &writefds, &exceptfds, &tv);
 #else
-    int selectionCount = ::select(p->nfds, &readfds, &writefds, 0, &tv);
+    int selectionCount = ::select(p->nfds, &readfds, &writefds, &exceptfds, &tv);
 #endif
     if(selectionCount == SOCKET_ERROR)
       return false;
@@ -477,6 +487,11 @@ bool_t Socket::Selector::select(Socket*& socket, uint_t& events, timestamp_t tim
         if(FD_ISSET(*i, &writefds))
         {
           events |= Socket::Selector::writeEvent;
+          --selectionCount;
+        }
+        if(FD_ISSET(*i, &exceptfds))
+        {
+          events |= Socket::Selector::exceptEvent;
           --selectionCount;
         }
         if(events)
