@@ -116,3 +116,67 @@ bool_t Server::process()
   }
   return true;
 }
+
+void_t Server::close(ClientSocket& socket)
+{
+  if(!socket.isOpen())
+    return;
+  selector.remove(socket);
+  socket.close();
+  socketsToDelete.append(&socket);
+}
+
+void_t Server::accept(ServerSocket& socket)
+{
+  ClientSocket* clientSocket = new ClientSocket(*this);
+  Client& client = clientSocket->client;
+  if(!clientSocket->accept(socket, client.addr, client.port) ||
+      !clientSocket->setNonBlocking() ||
+      !clientSocket->setKeepAlive() ||
+      !clientSocket->setNoDelay())
+  {
+    delete clientSocket;
+    return;
+  }
+  selector.set(*clientSocket, Socket::Selector::readEvent);
+  clientSockets.append(clientSocket);
+  if(listener)
+    listener->acceptedClient(client, socket.port);
+  if(client.listener)
+    client.listener->establish();
+}
+
+void_t Server::establish(ConnectSocket& socket)
+{
+  ClientSocket* clientSocket = socket.clientSocket;
+  socket.clientSocket = 0;
+  selector.remove(socket);
+  clientSocket->swap(socket);
+  connectSockets.remove(&socket);
+  delete &socket;
+  if(!clientSocket->setKeepAlive() ||
+      !clientSocket->setNoDelay())
+  {
+    delete clientSocket;
+    return;
+  }
+  selector.set(*clientSocket, Socket::Selector::readEvent);
+  clientSockets.append(clientSocket);
+  Client& client = clientSocket->client;
+  if(listener)
+    listener->establishedClient(client);
+  if(client.listener)
+    client.listener->establish();
+}
+
+void_t Server::abolish(ConnectSocket& socket)
+{
+  selector.remove(socket);
+  connectSockets.remove(&socket);
+  Client& client = socket.clientSocket->client;
+  if(client.listener)
+    client.listener->abolish();
+  if(listener)
+    listener->abolishedClient(client);
+  delete &socket;
+}
