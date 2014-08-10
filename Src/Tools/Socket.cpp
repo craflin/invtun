@@ -309,11 +309,6 @@ int_t Socket::getLastError()
   return ERRNO;
 }
 
-String Socket::getLastErrorString()
-{
-  return getErrorString(ERRNO);
-}
-
 String Socket::getErrorString(int_t error)
 {
 #ifdef _WIN32

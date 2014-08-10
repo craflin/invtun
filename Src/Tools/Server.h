@@ -81,29 +81,23 @@ public:
   };
 
   Server() : stopped(false), listener(0) {}
-
   ~Server();
 
   void_t setListener(Listener* listener) {this->listener = listener;}
+  Listener* getListener() const {return listener;}
 
   bool_t listen(uint16_t port);
-
   Client* connect(uint32_t addr, uint16_t port);
-
   Timer& addTimer(timestamp_t interval);
-  
-  void_t stop();
-
   bool_t process();
+  void_t stop();
 
 private:
   class CallbackSocket : public Socket
   {
   public:
     Server& server;
-  public:
     CallbackSocket(Server& server) : server(server) {}
-  public:
     virtual void_t read() {};
     virtual void_t write() {};
     virtual void_t except() {};
@@ -112,6 +106,10 @@ private:
   class ClientSocket : public CallbackSocket
   {
   public:
+    Client client;
+    Buffer sendBuffer;
+    Buffer recvBuffer;
+
     ClientSocket(Server& server) : CallbackSocket(server), client(server, *this) {}
 
     void_t reserve(size_t capacity)
@@ -172,50 +170,30 @@ private:
           client.listener->write();
       }
     }
-
-    
-    Client client;
-    Buffer sendBuffer;
-    Buffer recvBuffer;
   };
 
   class ServerSocket : public CallbackSocket
   {
   public:
+    uint16_t port;
     ServerSocket(Server& server, uint16_t port) : CallbackSocket(server), port(port) {}
     virtual void_t read() {server.accept(*this);}
-    uint16_t port;
   };
 
   class ConnectSocket : public CallbackSocket
   {
   public:
+    ClientSocket* clientSocket;
     ConnectSocket(Server& server) : CallbackSocket(server), clientSocket(new ClientSocket(server)) {}
     ~ConnectSocket() {delete clientSocket;}
-    virtual void_t write()
-    {
-      //int err = getAndResetErrorStatus();
-      //if(err == 0)
-        server.establish(*this);
-      //else
-      //{
-      //  Socket::setLastError(err);
-      //  server.abolish(*this);
-      //}
-    }
-    virtual void_t except()
-    {
-      int err = getAndResetErrorStatus();
-      Socket::setLastError(err);
-      server.abolish(*this);
-    }
-    ClientSocket* clientSocket;
+    virtual void_t write() {server.establish(*this);}
+    virtual void_t except() {server.abolish(*this, getAndResetErrorStatus());}
   };
 
   void_t close(ClientSocket& socket);
   void_t accept(ServerSocket& socket);
   void_t establish(ConnectSocket& socket);
-  void_t abolish(ConnectSocket& socket);
+  void_t abolish(ConnectSocket& socket, int_t error);
 
   volatile bool stopped;
   Listener* listener;

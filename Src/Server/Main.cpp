@@ -77,7 +77,7 @@ int_t main(int_t argc, char_t* argv[])
   server.setListener(&serverHandler);
   if(!server.listen(uplinkPort))
   {
-    Console::errorf("error: Could not listen on port %hu: %s\n", uplinkPort, (const char_t*)Socket::getLastErrorString());
+    Console::errorf("error: Could not listen on port %hu: %s\n", uplinkPort, (const char_t*)Socket::getErrorString());
     return -1;
   }
   Console::printf("Listening for uplink on port %hu...\n", uplinkPort);
@@ -86,14 +86,14 @@ int_t main(int_t argc, char_t* argv[])
     uint16_t port = *i;
     if(!server.listen(port))
     {
-      Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getLastErrorString());
+      Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getErrorString());
       return -1;
     }
     Console::printf("Listening for entries on port %hu...\n", port);
   }
   if(!server.process())
   {
-    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getLastErrorString());
+    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getErrorString());
     return -1;
   }
   return 0;

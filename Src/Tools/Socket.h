@@ -40,8 +40,7 @@ public:
 
   static void_t setLastError(int_t error);
   static int_t getLastError();
-  static String getLastErrorString();
-  static String getErrorString(int_t error);
+  static String getErrorString(int_t error = getLastError());
   static uint32_t inetAddr(const String& addr);
   static String inetNtoA(uint32_t ip);
 

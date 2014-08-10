@@ -67,12 +67,12 @@ int_t main(int_t argc, char_t* argv[])
   ClientHandler clientHandler(server, Socket::inetAddr(address), uplinkPort, secret);
   if(!clientHandler.connect())
   {
-    Console::errorf("error: Could not connect to %s:%hu: %s\n", (const char_t*)address, uplinkPort, (const char_t*)Socket::getLastErrorString());
+    Console::errorf("error: Could not connect to %s:%hu: %s\n", (const char_t*)address, uplinkPort, (const char_t*)Socket::getErrorString());
     return -1;
   }
   if(!server.process())
   {
-    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getLastErrorString());
+    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getErrorString());
     return -1;
   }
   return 0;

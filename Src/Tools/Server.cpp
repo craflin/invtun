@@ -171,13 +171,15 @@ void_t Server::establish(ConnectSocket& socket)
     client.listener->establish();
 }
 
-void_t Server::abolish(ConnectSocket& socket)
+void_t Server::abolish(ConnectSocket& socket, int_t error)
 {
   selector.remove(socket);
   connectSockets.remove(&socket);
   Client& client = socket.clientSocket->client;
+  Socket::setLastError(error);
   if(client.listener)
     client.listener->abolish();
+  Socket::setLastError(error);
   if(listener)
     listener->abolishedClient(client);
   delete &socket;

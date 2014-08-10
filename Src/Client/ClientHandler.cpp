@@ -70,7 +70,7 @@ void_t ClientHandler::abolishedClient(Server::Client& client)
 {
   if(client.getListener() == downlink)
   {
-    Console::printf("Could not establish downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
+    Console::printf("Could not establish downlink connection with %s:%hu: %s\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort(), (const char_t*)Socket::getErrorString());
     delete downlink;
     downlink = 0;
 
@@ -79,7 +79,7 @@ void_t ClientHandler::abolishedClient(Server::Client& client)
   else
   {
     EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
-    Console::printf("Could not establish endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
+    Console::printf("Could not establish endpoint connection with %s:%hu: %s\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort(), (const char_t*)Socket::getErrorString());
     uint32_t connectionId = endpoint->getConnectionId();
     if(downlink)
       downlink->sendDisconnect(connectionId);
@@ -90,7 +90,7 @@ void_t ClientHandler::abolishedClient(Server::Client& client)
 
 void_t ClientHandler::executedTimer(Server::Timer& timer)
 {
-  Console::printf("Executed timer\n");
+  //Console::printf("Executed timer\n");
   ASSERT(!downlink);
   if(!connect())
     server.addTimer(10 * 1000);
