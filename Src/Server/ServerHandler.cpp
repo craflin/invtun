@@ -99,12 +99,14 @@ void_t ServerHandler::closedClient(Server::Client& client)
   else
   {
     Console::printf("Closed entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
-
     EntryHandler* entry = (EntryHandler*)client.getListener();
-    uint32_t connectionId = entry->getConnectionId();
-    entries.remove(connectionId);
-    if(uplink)
-      uplink->sendDisconnect(connectionId);
-    delete entry;
+    if(entry)
+    {
+      uint32_t connectionId = entry->getConnectionId();
+      entries.remove(connectionId);
+      if(uplink)
+        uplink->sendDisconnect(connectionId);
+      delete entry;
+    }
   }
 }

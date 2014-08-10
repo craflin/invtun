@@ -58,11 +58,14 @@ void_t ClientHandler::closedClient(Server::Client& client)
   {
     Console::printf("Closed endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
     EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
-    uint32_t connectionId = endpoint->getConnectionId();
-    if(downlink)
-      downlink->sendDisconnect(connectionId);
-    endpoints.remove(connectionId);
-    delete endpoint;
+    if(endpoint)
+    {
+      uint32_t connectionId = endpoint->getConnectionId();
+      if(downlink)
+        downlink->sendDisconnect(connectionId);
+      endpoints.remove(connectionId);
+      delete endpoint;
+    }
   }
 }
 
