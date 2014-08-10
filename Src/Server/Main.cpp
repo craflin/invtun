@@ -83,7 +83,7 @@ int_t main(int_t argc, char_t* argv[])
   Console::printf("Listening for uplink on port %hu...\n", uplinkPort);
   for (HashMap<uint16_t, uint16_t>::Iterator i = ports.begin(), end = ports.end(); i != end; ++i)
   {
-    uint16_t port = *i;
+    uint16_t port = i.key();
     if(!server.listen(port))
     {
       Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getErrorString());
