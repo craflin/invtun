@@ -1,4 +1,13 @@
 
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <cstring>
+#endif
+
 #include <nstd/String.h>
 #include <nstd/Console.h>
 
@@ -36,7 +45,7 @@ int_t main(int_t argc, char_t* argv[])
 
     Console::printf("Starting as daemon...\n");
 
-    int fd = open(logFile, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+    int fd = open(logFile, O_CREAT | O_WRONLY | O_CLOEXEC, S_IRUSR | S_IWUSR);
     if(fd == -1)
     {
       Console::errorf("error: Could not open file %s: %s\n", logFile, strerror(errno));
