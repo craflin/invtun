@@ -53,8 +53,7 @@ void_t ClientHandler::closedClient(Server::Client& client)
     server.addTimer(10 * 1000); // start reconnect timer
 
     for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
-      delete *i;
-    endpoints.clear();
+      (*i)->disconnect();
   }
   else
   {
@@ -116,8 +115,7 @@ bool_t ClientHandler::removeConnection(uint32_t connectionId)
   if(it == endpoints.end())
     return false;
   EndpointHandler* endpoint = *it;
-  endpoints.remove(it);
-  delete endpoint;
+  endpoint->disconnect();
   return true;
 }
 

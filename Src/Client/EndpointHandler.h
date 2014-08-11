@@ -14,6 +14,7 @@ public:
   uint32_t getConnectionId() const {return connectionId;}
 
   void_t sendData(byte_t* data, size_t size);
+  void_t disconnect() {client.close();}
 
 private:
   ClientHandler& clientHandler;

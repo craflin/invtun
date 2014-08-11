@@ -25,8 +25,7 @@ bool_t ServerHandler::removeClient(uint32_t connectionId)
   if(it == entries.end())
     return false;
   EntryHandler* entry = *it;
-  entries.remove(it);
-  delete entry;
+  entry->disconnect();
   return true;
 }
 
@@ -59,8 +58,13 @@ void_t ServerHandler::acceptedClient(Server::Client& client, uint16_t localPort)
 {
   if(localPort == uplinkPort)
   {
+    if(uplink)
+    {
+      uplink->disconnect();
+      client.close();
+      return;
+    }
     Console::printf("Accepted uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
-    delete uplink;
     uplink = new UplinkHandler(*this, client);
   }
   else
@@ -95,8 +99,7 @@ void_t ServerHandler::closedClient(Server::Client& client)
     uplink = 0;
 
     for(HashMap<uint32_t, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
-      delete *i;
-    entries.clear();
+      (*i)->disconnect();
   }
   else
   {

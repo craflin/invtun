@@ -15,6 +15,7 @@ public:
   bool_t sendConnect(uint32_t connectionId, uint16_t port);
   bool_t sendDisconnect(uint32_t connectionId);
   bool_t sendData(uint32_t connectionId, const byte_t* data, size_t size);
+  void_t disconnect() {client.close();}
 
 private:
   ServerHandler& serverHandler;
