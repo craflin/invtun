@@ -85,6 +85,8 @@ void_t ServerHandler::acceptedClient(Server::Client& client, uint16_t localPort)
 
 void_t ServerHandler::closedClient(Server::Client& client)
 {
+  if(!client.getListener())
+    return;
   if(client.getListener() == uplink)
   {
     Console::printf("Closed uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
@@ -100,13 +102,10 @@ void_t ServerHandler::closedClient(Server::Client& client)
   {
     Console::printf("Closed entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
     EntryHandler* entry = (EntryHandler*)client.getListener();
-    if(entry)
-    {
-      uint32_t connectionId = entry->getConnectionId();
-      entries.remove(connectionId);
-      if(uplink)
-        uplink->sendDisconnect(connectionId);
-      delete entry;
-    }
+    uint32_t connectionId = entry->getConnectionId();
+    entries.remove(connectionId);
+    if(uplink)
+      uplink->sendDisconnect(connectionId);
+    delete entry;
   }
 }
