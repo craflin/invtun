@@ -186,8 +186,15 @@ private:
     ClientSocket* clientSocket;
     ConnectSocket(Server& server) : CallbackSocket(server), clientSocket(new ClientSocket(server)) {}
     ~ConnectSocket() {delete clientSocket;}
-    virtual void_t write() {server.establish(*this);}
-    virtual void_t except() {server.abolish(*this, getAndResetErrorStatus());}
+    virtual void_t write()
+    {
+      int_t err = getAndResetErrorStatus(); // we need this on linux. on windows write does not get called on connect failure.
+      if(err == 0)
+        server.establish(*this);
+      else
+        server.abolish(*this, err);
+    }
+    virtual void_t except() {server.abolish(*this, getAndResetErrorStatus());} // detect connect failure on windows
   };
 
   void_t close(ClientSocket& socket);
