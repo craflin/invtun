@@ -24,7 +24,7 @@ bool_t Server::listen(uint16_t port)
     delete socket;
     return false;
   }
-  selector.set(*socket, Socket::Selector::readEvent);
+  selector.set(*socket, Socket::Selector::acceptEvent);
   serverSockets.append(socket);
   return true;
 }
@@ -39,7 +39,7 @@ Server::Client* Server::connect(uint32_t addr, uint16_t port)
     delete socket;
     return 0;
   }
-  selector.set(*socket, Socket::Selector::exceptEvent | Socket::Selector::writeEvent);
+  selector.set(*socket, Socket::Selector::connectEvent);
   connectSockets.append(socket);
   Client& client = socket->clientSocket->client;
   client.addr = addr;
@@ -75,11 +75,9 @@ bool_t Server::process()
         return false;
       if(socket)
       {
-        if(selectEvent & Socket::Selector::exceptEvent)
-          ((CallbackSocket*)socket)->except();
-        if(selectEvent & Socket::Selector::writeEvent)
+        if(selectEvent & (Socket::Selector::writeEvent | Socket::Selector::connectEvent))
           ((CallbackSocket*)socket)->write();
-        if(selectEvent & Socket::Selector::readEvent)
+        if(selectEvent & (Socket::Selector::readEvent | Socket::Selector::acceptEvent))
           ((CallbackSocket*)socket)->read();
       }
     }

@@ -51,7 +51,8 @@ public:
     {
       readEvent = 0x01,
       writeEvent = 0x02,
-      exceptEvent = 0x04,
+      acceptEvent = 0x04,
+      connectEvent = 0x08,
     };
 
     Selector();
