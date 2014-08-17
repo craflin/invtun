@@ -26,6 +26,8 @@ public:
   bool_t setReuseAddress();
   bool_t setNonBlocking();
   bool_t setNoDelay();
+  bool_t setSendBufferSize(int_t size);
+  bool_t setReceiveBufferSize(int_t size);
   bool_t bind(uint32_t ip, uint16_t port);
   bool_t listen();
   bool_t connect(uint32_t ip, uint16_t port);

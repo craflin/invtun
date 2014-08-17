@@ -133,7 +133,9 @@ void_t Server::accept(ServerSocket& socket)
   if(!clientSocket->accept(socket, client.addr, client.port) ||
       !clientSocket->setNonBlocking() ||
       !clientSocket->setKeepAlive() ||
-      !clientSocket->setNoDelay())
+      !clientSocket->setNoDelay() ||
+      (sendBuffer > 0 && !clientSocket->setSendBufferSize(sendBuffer)) ||
+      (receiveBuffer > 0 && !clientSocket->setReceiveBufferSize(receiveBuffer)))
   {
     delete clientSocket;
     return;
@@ -155,7 +157,9 @@ void_t Server::establish(ConnectSocket& socket)
   connectSockets.remove(&socket);
   delete &socket;
   if(!clientSocket->setKeepAlive() ||
-      !clientSocket->setNoDelay())
+      !clientSocket->setNoDelay() ||
+      (sendBuffer > 0 && !clientSocket->setSendBufferSize(sendBuffer)) ||
+      (receiveBuffer > 0 && !clientSocket->setReceiveBufferSize(receiveBuffer)))
   {
     delete clientSocket;
     return;

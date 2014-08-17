@@ -134,6 +134,20 @@ bool_t Socket::setNoDelay()
   return true;
 }
 
+bool_t Socket::setSendBufferSize(int_t size)
+{
+  if(setsockopt((SOCKET)s, SOL_SOCKET, SO_SNDBUF, (char*)&size, sizeof(size)) != 0)
+    return false;
+  return true;
+}
+
+bool_t Socket::setReceiveBufferSize(int_t size)
+{
+  if(setsockopt((SOCKET)s, SOL_SOCKET, SO_RCVBUF, (char*)&size, sizeof(size)) != 0)
+    return false;
+  return true;
+}
+
 bool_t Socket::setKeepAlive()
 {
   int val = 1;

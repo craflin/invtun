@@ -11,8 +11,10 @@
 #include <nstd/String.h>
 #include <nstd/Console.h>
 
-#include "Tools/Server.h"
 #include "ClientHandler.h"
+
+#define SEND_BUFFER_SIZE (256 * 1024)
+#define RECV_BUFFER_SIZE (256 * 1024)
 
 int_t main(int_t argc, char_t* argv[])
 {
@@ -72,7 +74,7 @@ int_t main(int_t argc, char_t* argv[])
 #endif
 
   // start select loop
-  Server server;
+  Server server(SEND_BUFFER_SIZE, RECV_BUFFER_SIZE);
   ClientHandler clientHandler(server, Socket::inetAddr(address), uplinkPort, secret);
   if(!clientHandler.connect())
   {

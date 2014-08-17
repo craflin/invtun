@@ -13,6 +13,9 @@
 
 #include "ServerHandler.h"
 
+#define SEND_BUFFER_SIZE (256 * 1024)
+#define RECV_BUFFER_SIZE (256 * 1024)
+
 int_t main(int_t argc, char_t* argv[])
 {
   uint16_t uplinkPort = 1231;
@@ -81,7 +84,7 @@ int_t main(int_t argc, char_t* argv[])
 #endif
 
   // start server
-  Server server;
+  Server server(SEND_BUFFER_SIZE, RECV_BUFFER_SIZE);
   ServerHandler serverHandler(uplinkPort, secret, ports);
   server.setListener(&serverHandler);
   if(!server.listen(uplinkPort))

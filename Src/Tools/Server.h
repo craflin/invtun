@@ -83,7 +83,7 @@ public:
     virtual void_t executedTimer(Timer& timer) {};
   };
 
-  Server() : stopped(false), listener(0) {}
+  Server(int_t sendBuffer = -1, int_t receiveBuffer = -1) : stopped(false), listener(0), sendBuffer(sendBuffer), receiveBuffer(receiveBuffer) {}
   ~Server();
 
   void_t setListener(Listener* listener) {this->listener = listener;}
@@ -162,5 +162,11 @@ private:
   HashSet<ClientSocket*> clientSockets;
   List<ClientSocket*> socketsToDelete;
   MultiMap<timestamp_t, Timer*> timers;
+  int_t sendBuffer;
+  int_t receiveBuffer;
+
+private:
+  Server(const Server&);
+  Server& operator=(const Server&);
 };
 
