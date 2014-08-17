@@ -54,7 +54,98 @@ bool_t UplinkHandler::sendData(uint32_t connectionId, const byte_t* data, size_t
   client.reserve(dataMessage.size);
   client.send((const byte_t*)&dataMessage, sizeof(dataMessage));
   client.send(data, size);
+  if(!client.flush())
+    serverHandler.suspendAllEntries();
   return true;
+}
+
+bool_t UplinkHandler::sendSuspend(uint32_t connectionId)
+{
+  if(!authed)
+    return false;
+
+  Protocol::SuspendMessage suspendMessage;
+  suspendMessage.size = sizeof(suspendMessage);
+  suspendMessage.messageType = Protocol::suspend;
+  suspendMessage.connectionId = connectionId;
+  client.send((const byte_t*)&suspendMessage, sizeof(suspendMessage));
+  return true;
+}
+
+bool_t UplinkHandler::sendResume(uint32_t connectionId)
+{
+  if(!authed)
+    return false;
+
+  Protocol::ResumeMessage resumeMessage;
+  resumeMessage.size = sizeof(resumeMessage);
+  resumeMessage.messageType = Protocol::resume;
+  resumeMessage.connectionId = connectionId;
+  client.send((const byte_t*)&resumeMessage, sizeof(resumeMessage));
+  return true;
+}
+
+void_t UplinkHandler::handleMessage(Protocol::MessageType messageType, byte_t* data, size_t size)
+{
+  switch(messageType)
+  {
+  case Protocol::auth:
+    if(!authed && size >= sizeof(Protocol::AuthMessage))
+      handleAuthMessage(*(Protocol::AuthMessage*)data);
+    break;
+  case Protocol::disconnect:
+    if(authed && size >= sizeof(Protocol::DisconnectMessage))
+      handleDisconnectMessage(*(Protocol::DisconnectMessage*)data);
+    break;
+  case Protocol::data:
+    if(authed && size >= sizeof(Protocol::DataMessage))
+      handleDataMessage(*(Protocol::DataMessage*)data, data + sizeof(Protocol::DataMessage), size - sizeof(Protocol::DataMessage));
+    break;
+  case Protocol::suspend:
+    if(authed && size >= sizeof(Protocol::SuspendMessage))
+      handleSuspendMessage(*(Protocol::SuspendMessage*)data);
+    break;
+  case Protocol::resume:
+    if(authed && size >= sizeof(Protocol::ResumeMessage))
+      handleResumeMessage(*(Protocol::ResumeMessage*)data);
+    break;
+  default:
+    break;
+  }
+}
+
+void_t UplinkHandler::handleAuthMessage(Protocol::AuthMessage& authMessage)
+{
+  if(Protocol::getString(authMessage.secret) != serverHandler.getSecret())
+  {
+    client.close();
+    return; // invalid secret
+  }
+  authed = true;
+  Protocol::Header response;
+  response.size = sizeof(response);
+  response.messageType = Protocol::authResponse;
+  client.send((const byte_t*)&response, sizeof(response));
+}
+
+void_t UplinkHandler::handleDisconnectMessage(const Protocol::DisconnectMessage& disconnectMessage)
+{
+  serverHandler.removeEntry(disconnectMessage.connectionId);
+}
+
+void_t UplinkHandler::handleDataMessage(const Protocol::DataMessage& dataMessage, byte_t* data, size_t size)
+{
+  serverHandler.sendDataToEntry(dataMessage.connectionId, data, size);
+}
+
+void_t UplinkHandler::handleSuspendMessage(const Protocol::SuspendMessage& suspendMessage)
+{
+  serverHandler.suspendEntry(suspendMessage.connectionId);
+}
+
+void_t UplinkHandler::handleResumeMessage(const Protocol::ResumeMessage& resumeMessage)
+{
+  serverHandler.resumeEntry(resumeMessage.connectionId);
 }
 
 size_t UplinkHandler::handle(byte_t* data, size_t size)
@@ -84,47 +175,7 @@ size_t UplinkHandler::handle(byte_t* data, size_t size)
   return pos - data;
 }
 
-void_t UplinkHandler::handleMessage(Protocol::MessageType messageType, byte_t* data, size_t size)
+void_t UplinkHandler::write()
 {
-  switch(messageType)
-  {
-  case Protocol::auth:
-    if(!authed && size >= sizeof(Protocol::AuthMessage))
-      handleAuthMessage(*(Protocol::AuthMessage*)data);
-    break;
-  case Protocol::disconnect:
-    if(authed && size >= sizeof(Protocol::DisconnectMessage))
-      handleDisconnectMessag(*(Protocol::DisconnectMessage*)data);
-    break;
-  case Protocol::data:
-    if(authed && size >= sizeof(Protocol::DataMessage))
-      handleDataMessag(*(Protocol::DataMessage*)data, data + sizeof(Protocol::DataMessage), size - sizeof(Protocol::DataMessage));
-    break;
-  default:
-    break;
-  }
-}
-
-void_t UplinkHandler::handleAuthMessage(Protocol::AuthMessage& authMessage)
-{
-  if(Protocol::getString(authMessage.secret) != serverHandler.getSecret())
-  {
-    client.close();
-    return; // invalid secret
-  }
-  authed = true;
-  Protocol::Header response;
-  response.size = sizeof(response);
-  response.messageType = Protocol::authResponse;
-  client.send((const byte_t*)&response, sizeof(response));
-}
-
-void_t UplinkHandler::handleDisconnectMessag(Protocol::DisconnectMessage& disconnectMessage)
-{
-  serverHandler.removeClient(disconnectMessage.connectionId);
-}
-
-void_t UplinkHandler::handleDataMessag(Protocol::DataMessage& dataMessage, byte_t* data, size_t size)
-{
-  serverHandler.sendDataToEntry(dataMessage.connectionId, data, size);
+  serverHandler.resumeAllEntries();
 }

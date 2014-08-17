@@ -17,9 +17,15 @@ public:
 
   const String& getSecret() const {return secret;}
 
-  bool_t removeClient(uint32_t connectionId);
+  bool_t removeEntry(uint32_t connectionId);
   bool_t sendDataToEntry(uint32_t connectionId, byte_t* data, size_t size);
   bool_t sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size);
+  void_t sendSuspendEndpoint(uint32_t connectionId);
+  void_t sendResumeEndpoint(uint32_t connectionId);
+  void_t suspendEntry(uint32_t connectionId);
+  void_t resumeEntry(uint32_t connectionId);
+  void_t suspendAllEntries();
+  void_t resumeAllEntries();
 
 private:
   uint16_t uplinkPort;
@@ -28,6 +34,7 @@ private:
   HashMap<uint32_t, EntryHandler*> entries;
   HashMap<uint16_t, uint16_t> portMapping;
   uint32_t nextConnectionId;
+  bool_t suspendedAllEntries;
 
 private:
   uint16_t mapPort(uint16_t port);

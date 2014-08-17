@@ -5,7 +5,8 @@
 #include "UplinkHandler.h"
 #include "EntryHandler.h"
 
-ServerHandler::ServerHandler(uint16_t uplinkPort, const String& secret, const HashMap<uint16_t, uint16_t>& ports) : uplinkPort(uplinkPort), secret(secret), uplink(0), nextConnectionId(1)
+ServerHandler::ServerHandler(uint16_t uplinkPort, const String& secret, const HashMap<uint16_t, uint16_t>& ports) :
+  uplinkPort(uplinkPort), secret(secret), uplink(0), nextConnectionId(1), suspendedAllEntries(false)
 {
   for(HashMap<uint16_t, uint16_t>::Iterator i = ports.begin(), end = ports.end(); i != end; ++i)
     if(i.key() != *i)
@@ -19,7 +20,7 @@ ServerHandler::~ServerHandler()
   delete uplink;
 }
 
-bool_t ServerHandler::removeClient(uint32_t connectionId)
+bool_t ServerHandler::removeEntry(uint32_t connectionId)
 {
   HashMap<uint32_t, EntryHandler*>::Iterator it = entries.find(connectionId);
   if(it == entries.end())
@@ -44,6 +45,56 @@ bool_t ServerHandler::sendDataToUplink(uint32_t connectionId, byte_t* data, size
   if(!uplink)
     return false;
   return uplink->sendData(connectionId, data, size);
+}
+
+void_t ServerHandler::sendSuspendEndpoint(uint32_t connectionId)
+{
+  if(!uplink)
+    return;
+  uplink->sendSuspend(connectionId);
+}
+
+void_t ServerHandler::sendResumeEndpoint(uint32_t connectionId)
+{
+  if(!uplink)
+    return;
+  uplink->sendResume(connectionId);
+}
+
+void_t ServerHandler::suspendEntry(uint32_t connectionId)
+{
+  HashMap<uint32_t, EntryHandler*>::Iterator it = entries.find(connectionId);
+  if(it == entries.end())
+    return;
+  EntryHandler* entry = *it;
+  entry->suspendByUplink();
+}
+
+void_t ServerHandler::resumeEntry(uint32_t connectionId)
+{
+  HashMap<uint32_t, EntryHandler*>::Iterator it = entries.find(connectionId);
+  if(it == entries.end())
+    return;
+  EntryHandler* entry = *it;
+  entry->resumeByUplink();
+}
+
+void_t ServerHandler::suspendAllEntries()
+{
+  if(suspendedAllEntries)
+    return;
+  for(HashMap<uint32_t, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
+    (*i)->suspend();
+  suspendedAllEntries = true;
+}
+
+void_t ServerHandler::resumeAllEntries()
+{
+  if(!suspendedAllEntries)
+    return;
+  for(HashMap<uint32_t, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
+    (*i)->resume();
+  suspendedAllEntries = false;
 }
 
 uint16_t ServerHandler::mapPort(uint16_t port)

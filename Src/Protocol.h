@@ -14,6 +14,8 @@ public:
     connect,
     disconnect,
     data,
+    suspend,
+    resume,
   };
 
 #pragma pack(push, 4)
@@ -44,6 +46,15 @@ public:
     uint32_t connectionId;
   };
 
+  struct SuspendMessage : public Header
+  {
+    uint32_t connectionId;
+  };
+
+  struct ResumeMessage : public Header
+  {
+    uint32_t connectionId;
+  };
 #pragma pack(pop)
 
   template<size_t N> static void_t setString(char_t(&str)[N], const String& value)
@@ -62,5 +73,4 @@ public:
     result.attach(str, String::length(str));
     return result;
   }
-
 };

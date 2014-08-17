@@ -182,3 +182,80 @@ void_t Server::abolish(ConnectSocket& socket, int_t error)
     listener->abolishedClient(client);
   delete &socket;
 }
+
+void_t Server::ClientSocket::reserve(size_t capacity)
+{
+  sendBuffer.reserve(sendBuffer.size() + capacity);
+}
+
+bool_t Server::ClientSocket::send(const byte_t* data, size_t size)
+{
+  if(sendBuffer.isEmpty())
+    server.selector.set(*this, (suspended ? 0 : Socket::Selector::readEvent) | Socket::Selector::writeEvent);
+  sendBuffer.append(data, size);
+  return true;
+}
+
+void_t Server::ClientSocket::suspend()
+{
+  if(suspended)
+    return;
+  server.selector.set(*this, sendBuffer.isEmpty() ? 0 : Socket::Selector::writeEvent);
+  suspended = true;
+}
+
+void_t Server::ClientSocket::resume()
+{
+  if(!suspended)
+    return;
+  server.selector.set(*this, sendBuffer.isEmpty() ? Socket::Selector::readEvent : (Socket::Selector::readEvent | Socket::Selector::writeEvent));
+  suspended = false;
+}
+
+bool_t Server::ClientSocket::flush()
+{
+  if(sendBuffer.isEmpty())
+    return true;
+  ssize_t sent = Socket::send(sendBuffer, sendBuffer.size());
+  switch(sent)
+  {
+  case -1:
+    if(getLastError() == 0) // EWOULDBLOCK
+      return false;
+    // no break
+  case 0:
+    server.close(*this);
+    return true;
+  }
+  sendBuffer.removeFront(sent);
+  if(sendBuffer.isEmpty())
+  {
+    sendBuffer.free();
+    server.selector.set(*this, suspended ? 0 : Socket::Selector::readEvent);
+    if(client.listener)
+      client.listener->write();
+    return true;
+  }
+  return false;
+}
+
+void_t Server::ClientSocket::read()
+{
+  size_t bufferSize = recvBuffer.size();
+  recvBuffer.resize(bufferSize + 1500);
+  ssize_t received = Socket::recv(recvBuffer + bufferSize, 1500);
+  switch(received)
+  {
+  case -1:
+    if(getLastError() == 0) // EWOULDBLOCK
+      return;
+    // no break
+  case 0:
+    server.close(*this);
+    return;
+  }
+  bufferSize += received;
+  recvBuffer.resize(bufferSize);
+  size_t handled = client.listener ? client.listener->handle(recvBuffer, bufferSize) : bufferSize;
+  recvBuffer.removeFront(handled);
+}

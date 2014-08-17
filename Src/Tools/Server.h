@@ -32,6 +32,9 @@ public:
     Listener* getListener() const {return listener;}
     void_t reserve(size_t capacity) {socket.reserve(capacity);}
     bool_t send(const byte_t* data, size_t size) {return socket.send(data, size);}
+    void_t suspend() {socket.suspend();}
+    void_t resume() {socket.resume();}
+    bool_t flush() {return socket.flush();}
     void_t close() {server.close(socket);}
     uint32_t getAddr() const {return addr;}
     uint16_t getPort() const {return port;}
@@ -108,71 +111,18 @@ private:
     Client client;
     Buffer sendBuffer;
     Buffer recvBuffer;
+    bool_t suspended;
 
-    ClientSocket(Server& server) : CallbackSocket(server), client(server, *this) {}
+    ClientSocket(Server& server) : CallbackSocket(server), client(server, *this), suspended(false) {}
 
-    void_t reserve(size_t capacity)
-    {
-      sendBuffer.reserve(sendBuffer.size() + capacity);
-    }
+    void_t reserve(size_t capacity);
+    bool_t send(const byte_t* data, size_t size);
+    void_t suspend();
+    void_t resume();
+    bool_t flush();
 
-    bool_t send(const byte_t* data, size_t size)
-    {
-      if(sendBuffer.isEmpty())
-        server.selector.set(*this, Socket::Selector::readEvent | Socket::Selector::writeEvent);
-      sendBuffer.append(data, size);
-      return true;
-    }
-
-    //void_t suspend(); ??
-    //void_t resume(); ??
-    //bool_t flush(); ??
-
-    virtual void_t read()
-    {
-      size_t bufferSize = recvBuffer.size();
-      recvBuffer.resize(bufferSize + 1500);
-      ssize_t received = Socket::recv(recvBuffer + bufferSize, 1500);
-      switch(received)
-      {
-      case -1:
-        if(getLastError() == 0) // EWOULDBLOCK
-          return;
-        // no break
-      case 0:
-        server.close(*this);
-        return;
-      }
-      bufferSize += received;
-      recvBuffer.resize(bufferSize);
-      size_t handled = client.listener ? client.listener->handle(recvBuffer, bufferSize) : bufferSize;
-      recvBuffer.removeFront(handled);
-    }
-
-    virtual void_t write()
-    {
-      if(sendBuffer.isEmpty())
-        return;
-      ssize_t sent = Socket::send(sendBuffer, sendBuffer.size());
-      switch(sent)
-      {
-      case -1:
-        if(getLastError() == 0) // EWOULDBLOCK
-          return;
-        // no break
-      case 0:
-        server.close(*this);
-        return;
-      }
-      sendBuffer.removeFront(sent);
-      if(sendBuffer.isEmpty())
-      {
-        sendBuffer.free();
-        server.selector.set(*this, Socket::Selector::readEvent);
-        if(client.listener)
-          client.listener->write();
-      }
-    }
+    virtual void_t read();
+    virtual void_t write() {flush();}
   };
 
   class ServerSocket : public CallbackSocket

@@ -6,7 +6,8 @@
 #include "EndpointHandler.h"
 #include "DownlinkHandler.h"
 
-ClientHandler::ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) : server(server), addr(addr), port(port), secret(secret), downlink(0)
+ClientHandler::ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) :
+  server(server), addr(addr), port(port), secret(secret), downlink(0), suspendedAlldEnpoints(false)
 {
   server.setListener(this);
 }
@@ -35,9 +36,7 @@ void_t ClientHandler::establishedClient(Server::Client& client)
   if(client.getListener() == downlink)
     Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
   else
-  {
     Console::printf("Established endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
-  }
 }
 
 void_t ClientHandler::closedClient(Server::Client& client)
@@ -135,4 +134,54 @@ bool_t ClientHandler::sendDataToEndpoint(uint32_t connectionId, byte_t* data, si
   EndpointHandler* endpoint = *it;
   endpoint->sendData(data, size);
   return true;
+}
+
+void_t ClientHandler::sendSuspendEntry(uint32_t connectionId)
+{
+  if(!downlink)
+    return;
+  downlink->sendSuspend(connectionId);
+}
+
+void_t ClientHandler::sendResumeEntry(uint32_t connectionId)
+{
+  if(!downlink)
+    return;
+  downlink->sendResume(connectionId);
+}
+
+void_t ClientHandler::suspendEndpoint(uint32_t connectionId)
+{
+  HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
+  if(it == endpoints.end())
+    return;
+  EndpointHandler* endpoint = *it;
+  endpoint->suspendByDownlink();
+}
+
+void_t ClientHandler::resumeEndpoint(uint32_t connectionId)
+{
+  HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
+  if(it == endpoints.end())
+    return;
+  EndpointHandler* endpoint = *it;
+  endpoint->resumeByDownlink();
+}
+
+void_t ClientHandler::suspendAllEndpoints()
+{
+  if(suspendedAlldEnpoints)
+    return;
+  for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
+    (*i)->suspend();
+  suspendedAlldEnpoints = true;
+}
+
+void_t ClientHandler::resumeAllEndpoints()
+{
+  if(!suspendedAlldEnpoints)
+    return;
+  for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
+    (*i)->resume();
+  suspendedAlldEnpoints = false;
 }
