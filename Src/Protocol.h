@@ -18,11 +18,11 @@ public:
     resume,
   };
 
-#pragma pack(push, 4)
+#pragma pack(push, 1)
   struct Header
   {
-    uint32_t size;
-    uint16_t messageType; // MessageType
+    uint16_t size;
+    uint8_t messageType; // MessageType
   };
 
   struct AuthMessage : public Header
