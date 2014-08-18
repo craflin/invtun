@@ -44,6 +44,7 @@ public:
   struct DataMessage : public Header
   {
     uint32_t connectionId;
+    uint16_t originalSize;
   };
 
   struct SuspendMessage : public Header

@@ -1,4 +1,6 @@
 
+#include <lz4.h>
+
 #include "DownlinkHandler.h"
 #include "ClientHandler.h"
 
@@ -32,13 +34,22 @@ bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t siz
   if(!authed)
     return false;
 
+  lz4Buffer.resize(LZ4_compressBound(size));
+  int compressedSize = LZ4_compress((const char*)data, (char*)(byte_t*)lz4Buffer, size);
+  if(compressedSize <= 0)
+  {
+    client.close();
+    return false;
+  }
+
   Protocol::DataMessage dataMessage;
-  dataMessage.size = sizeof(dataMessage) + size;
+  dataMessage.size = sizeof(dataMessage) + compressedSize;
   dataMessage.messageType = Protocol::data;
   dataMessage.connectionId = connectionId;
+  dataMessage.originalSize = size;
   client.reserve(dataMessage.size);
   client.send((const byte_t*)&dataMessage, sizeof(dataMessage));
-  client.send(data, size);
+  client.send(lz4Buffer, compressedSize);
   if(!client.flush())
     clientHandler.suspendAllEndpoints();
   return true;
@@ -125,7 +136,15 @@ void_t DownlinkHandler::handleDisconnectMessage(const Protocol::DisconnectMessag
 
 void_t DownlinkHandler::handleDataMessage(const Protocol::DataMessage& message, byte_t* data, size_t size)
 {
-  clientHandler.sendDataToEndpoint(message.connectionId, data, size);
+  uint32_t originalSize = message.originalSize;
+  lz4Buffer.resize(originalSize);
+  if(LZ4_decompress_safe((const char*)data,(char*)(byte_t*)lz4Buffer, size, originalSize) != originalSize)
+  {
+    client.close();
+    return;
+  }
+
+  clientHandler.sendDataToEndpoint(message.connectionId, lz4Buffer, originalSize);
 }
 
 void_t DownlinkHandler::handleSuspendMessage(const Protocol::SuspendMessage& suspendMessage)

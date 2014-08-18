@@ -21,6 +21,7 @@ private:
   ClientHandler& clientHandler;
   Server::Client& client;
   bool_t authed;
+  Buffer lz4Buffer;
 
 private:
   void_t handleMessage(Protocol::MessageType messageType, byte_t* data, size_t size);

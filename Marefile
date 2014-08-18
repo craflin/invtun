@@ -1,4 +1,6 @@
 
+name = "invtun"
+
 targets = {
 
   all = {
@@ -6,12 +8,19 @@ targets = {
   }
 
   invtunc = cppApplication + {
-    dependencies = { "libnstd" }
+    dependencies = { "libnstd", "liblz4" }
     buildDir = "Build/$(configuration)/Client"
     output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
-    includePaths = { "Ext/libnstd/include", "Src" }
-    libPaths = { "Build/$(configuration)/libnstd" }
-    libs = { "nstd" }
+    includePaths = {
+      "Ext/libnstd/include"
+      "Ext/lz4"
+      "Src"
+    }
+    libPaths = {
+      "Build/$(configuration)/libnstd"
+      "Build/$(configuration)/liblz4"
+    }
+    libs = { "nstd", "lz4" }
     root = { "Src/Client", "Src" }
     files = {
       "Src/Client/**.cpp" = cppSource
@@ -31,12 +40,19 @@ targets = {
   }
   
   invtuns = cppApplication + {
-    dependencies = { "libnstd" }
+    dependencies = { "libnstd", "liblz4" }
     buildDir = "Build/$(configuration)/Server"
     output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
-    includePaths = { "Ext/libnstd/include", "Src" }
-    libPaths = { "Build/$(configuration)/libnstd" }
-    libs = { "nstd" }
+    includePaths = {
+      "Ext/libnstd/include"
+      "Ext/lz4"
+      "Src"
+    }
+    libPaths = {
+      "Build/$(configuration)/libnstd"
+      "Build/$(configuration)/liblz4"
+    }
+    libs = { "nstd", "lz4" }
     root = { "Src/Server", "Src" }
     files = {
       "Src/Server/**.cpp" = cppSource
@@ -66,6 +82,17 @@ targets = {
     }
     if tool == "vcxproj" {
       defines += { "_CRT_SECURE_NO_WARNINGS" }
+    }
+  }
+  
+  liblz4 = cppStaticLibrary + {
+    folder = "Libraries"
+    includePaths = { "Ext/lz4" }
+    buildDir = "Build/$(configuration)/$(target)"
+    root = { "Ext/lz4" }
+    files = {
+      "Ext/lz4/lz4.c" = cSource,
+      "Ext/lz4/lz4.h"
     }
   }
 }

@@ -1,7 +1,8 @@
 
+#include <lz4.h>
+
 #include "UplinkHandler.h"
 #include "ServerHandler.h"
-#include "EntryHandler.h"
 
 UplinkHandler::UplinkHandler(ServerHandler& serverHandler, Server::Client& client) :
   serverHandler(serverHandler), client(client), authed(false)
@@ -47,13 +48,21 @@ bool_t UplinkHandler::sendData(uint32_t connectionId, const byte_t* data, size_t
   if(!authed)
     return false;
 
+  lz4Buffer.resize(LZ4_compressBound(size));
+  int compressedSize = LZ4_compress((const char*)data, (char*)(byte_t*)lz4Buffer, size);
+  if(compressedSize <= 0)
+  {
+    client.close();
+    return false;
+  }
+
   Protocol::DataMessage dataMessage;
-  dataMessage.size = sizeof(dataMessage) + size;
+  dataMessage.size = sizeof(dataMessage) + compressedSize;
   dataMessage.messageType = Protocol::data;
   dataMessage.connectionId = connectionId;
   client.reserve(dataMessage.size);
   client.send((const byte_t*)&dataMessage, sizeof(dataMessage));
-  client.send(data, size);
+  client.send(lz4Buffer, compressedSize);
   if(!client.flush())
     serverHandler.suspendAllEntries();
   return true;
@@ -133,9 +142,17 @@ void_t UplinkHandler::handleDisconnectMessage(const Protocol::DisconnectMessage&
   serverHandler.removeEntry(disconnectMessage.connectionId);
 }
 
-void_t UplinkHandler::handleDataMessage(const Protocol::DataMessage& dataMessage, byte_t* data, size_t size)
+void_t UplinkHandler::handleDataMessage(const Protocol::DataMessage& message, byte_t* data, size_t size)
 {
-  serverHandler.sendDataToEntry(dataMessage.connectionId, data, size);
+  uint32_t originalSize = message.originalSize;
+  lz4Buffer.resize(originalSize);
+  if(LZ4_decompress_safe((const char*)data,(char*)(byte_t*)lz4Buffer, size, originalSize) != originalSize)
+  {
+    client.close();
+    return;
+  }
+
+  serverHandler.sendDataToEntry(message.connectionId, lz4Buffer, originalSize);
 }
 
 void_t UplinkHandler::handleSuspendMessage(const Protocol::SuspendMessage& suspendMessage)
