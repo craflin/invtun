@@ -60,6 +60,7 @@ bool_t UplinkHandler::sendData(uint32_t connectionId, const byte_t* data, size_t
   dataMessage.size = sizeof(dataMessage) + compressedSize;
   dataMessage.messageType = Protocol::data;
   dataMessage.connectionId = connectionId;
+  dataMessage.originalSize = size;
   client.reserve(dataMessage.size);
   client.send((const byte_t*)&dataMessage, sizeof(dataMessage));
   client.send(lz4Buffer, compressedSize);
