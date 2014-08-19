@@ -47,6 +47,7 @@ bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t siz
   dataMessage.messageType = Protocol::data;
   dataMessage.connectionId = connectionId;
   dataMessage.originalSize = size;
+  //Console::printf("sendData: compressedSize=%d, originalSize=%d, size=%llu\n", compressedSize, (int)dataMessage.originalSize, (uint64_t)size);
   client.reserve(dataMessage.size);
   client.send((const byte_t*)&dataMessage, sizeof(dataMessage));
   client.send(lz4Buffer, compressedSize);
@@ -136,6 +137,8 @@ void_t DownlinkHandler::handleDisconnectMessage(const Protocol::DisconnectMessag
 
 void_t DownlinkHandler::handleDataMessage(const Protocol::DataMessage& message, byte_t* data, size_t size)
 {
+  //Console::printf("recvData: compressedSize=%d, originalSize=%d\n", (int)size, (int)message.originalSize);
+
   int originalSize = message.originalSize;
   lz4Buffer.resize(originalSize);
   if(LZ4_decompress_safe((const char*)data,(char*)(byte_t*)lz4Buffer, size, originalSize) != originalSize)

@@ -21,7 +21,7 @@ public:
 #pragma pack(push, 1)
   struct Header
   {
-    uint16_t size;
+    uint32_t size:24;
     uint8_t messageType; // MessageType
   };
 
@@ -44,7 +44,7 @@ public:
   struct DataMessage : public Header
   {
     uint32_t connectionId;
-    uint16_t originalSize;
+    uint32_t originalSize:24;
   };
 
   struct SuspendMessage : public Header
