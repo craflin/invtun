@@ -179,7 +179,7 @@ size_t DownlinkHandler::handle(byte_t* data, size_t size)
     pos += header->size;
     size -= header->size;
   }
-  if(size > RECV_BUFFER_SIZE + sizeof(Protocol::DataMessage))
+  if(size > LZ4_compressBound(RECV_BUFFER_SIZE) + sizeof(Protocol::DataMessage))
   {
     client.close();
     return 0;
