@@ -13,9 +13,6 @@
 
 #include "ClientHandler.h"
 
-#define SEND_BUFFER_SIZE (256 * 1024)
-#define RECV_BUFFER_SIZE (256 * 1024)
-
 int_t main(int_t argc, char_t* argv[])
 {
   uint16_t uplinkPort = 1231;

@@ -5,6 +5,9 @@
 
 #include "Tools/Server.h"
 
+#define SEND_BUFFER_SIZE (256 * 1024)
+#define RECV_BUFFER_SIZE (256 * 1024)
+
 class DownlinkHandler;
 class EndpointHandler;
 

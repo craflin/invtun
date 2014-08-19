@@ -246,8 +246,8 @@ bool_t Server::ClientSocket::flush()
 void_t Server::ClientSocket::read()
 {
   size_t bufferSize = recvBuffer.size();
-  recvBuffer.resize(bufferSize + 1500);
-  ssize_t received = Socket::recv(recvBuffer + bufferSize, 1500);
+  recvBuffer.resize(bufferSize + server.receiveBuffer);
+  ssize_t received = Socket::recv(recvBuffer + bufferSize, server.receiveBuffer);
   switch(received)
   {
   case -1:

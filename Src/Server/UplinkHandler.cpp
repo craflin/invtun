@@ -185,7 +185,7 @@ size_t UplinkHandler::handle(byte_t* data, size_t size)
     pos += header->size;
     size -= header->size;
   }
-  if(size >= 5000)
+  if(size >= RECV_BUFFER_SIZE + sizeof(Protocol::DataMessage))
   {
     client.close();
     return 0;
