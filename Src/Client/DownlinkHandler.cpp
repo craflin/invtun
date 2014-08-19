@@ -136,7 +136,7 @@ void_t DownlinkHandler::handleDisconnectMessage(const Protocol::DisconnectMessag
 
 void_t DownlinkHandler::handleDataMessage(const Protocol::DataMessage& message, byte_t* data, size_t size)
 {
-  uint32_t originalSize = message.originalSize;
+  int originalSize = message.originalSize;
   lz4Buffer.resize(originalSize);
   if(LZ4_decompress_safe((const char*)data,(char*)(byte_t*)lz4Buffer, size, originalSize) != originalSize)
   {
