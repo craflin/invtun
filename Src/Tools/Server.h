@@ -86,7 +86,7 @@ public:
     virtual void_t executedTimer(Timer& timer) {};
   };
 
-  Server(int_t sendBuffer = -1, int_t receiveBuffer = -1) : stopped(false), listener(0), sendBuffer(sendBuffer), receiveBuffer(receiveBuffer) {}
+  Server(int_t sendBuffer = -1, int_t receiveBuffer = -1) : stopped(false), listener(0), sendBuffer(sendBuffer), receiveBuffer(receiveBuffer), cleanupTimer(*this) {}
   ~Server();
 
   void_t setListener(Listener* listener) {this->listener = listener;}
@@ -152,11 +152,18 @@ private:
     }
   };
 
-  void_t close(ClientSocket& socket);
-  void_t accept(ServerSocket& socket);
-  void_t establish(ConnectSocket& socket);
-  void_t abolish(ConnectSocket& socket, int_t error);
+  class CleanupTimer : public Timer::Listener
+  {
+  private:
+    Server& server;
+  private:
+    CleanupTimer(Server& server) : server(server) {}
+  private:
+    virtual bool_t execute() {server.cleanup(); return true;}
+    friend class Server;
+  };
 
+private:
   volatile bool stopped;
   Listener* listener;
   Socket::Selector selector;
@@ -167,8 +174,15 @@ private:
   MultiMap<timestamp_t, Timer> timers;
   int_t sendBuffer;
   int_t receiveBuffer;
+  CleanupTimer cleanupTimer;
 
 private:
+  void_t close(ClientSocket& socket);
+  void_t accept(ServerSocket& socket);
+  void_t establish(ConnectSocket& socket);
+  void_t abolish(ConnectSocket& socket, int_t error);
+  void_t cleanup();
+
   Server(const Server&);
   Server& operator=(const Server&);
 };

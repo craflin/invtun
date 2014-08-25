@@ -89,7 +89,7 @@ bool_t Server::process()
         {
           Timer& timer = timers.front();
           bool repeat = timer.listener && !timer.listener->execute();
-          if(listener)
+          if(timer.listener != &cleanupTimer && listener)
             listener->executedTimer(timer);
           if(repeat)
             *timers.insert(timerTime + timer.interval, timer);
@@ -98,17 +98,6 @@ bool_t Server::process()
         else
           break;
       }
-    }
-    if(!socketsToDelete.isEmpty())
-    {
-      ClientSocket* clientSocket = socketsToDelete.front();
-      socketsToDelete.removeFront();
-      clientSockets.remove(clientSocket);
-      if(clientSocket->client.listener)
-        clientSocket->client.listener->close();
-      if(listener)
-        listener->closedClient(clientSocket->client);
-      delete clientSocket;
     }
   }
   return true;
@@ -120,6 +109,8 @@ void_t Server::close(ClientSocket& socket)
     return;
   selector.remove(socket);
   socket.close();
+  if(socketsToDelete.isEmpty())
+    addTimer(0).setListener(&cleanupTimer);
   socketsToDelete.append(&socket);
 }
 
@@ -182,6 +173,21 @@ void_t Server::abolish(ConnectSocket& socket, int_t error)
   if(listener)
     listener->abolishedClient(client);
   delete &socket;
+}
+
+void_t Server::cleanup()
+{
+  while(!socketsToDelete.isEmpty())
+  {
+    ClientSocket* clientSocket = socketsToDelete.front();
+    socketsToDelete.removeFront();
+    clientSockets.remove(clientSocket);
+    if(clientSocket->client.listener)
+      clientSocket->client.listener->close();
+    if(listener)
+      listener->closedClient(clientSocket->client);
+    delete clientSocket;
+  }
 }
 
 void_t Server::ClientSocket::reserve(size_t capacity)
