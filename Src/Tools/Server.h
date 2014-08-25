@@ -61,14 +61,17 @@ public:
     };
 
   public:
+    Timer() : interval(0), listener(0) {}
+    Timer(const Timer& other) : interval(other.interval), listener(other.listener) {}
+
     void_t setListener(Listener* listener) {this->listener = listener;}
     Listener* getListener() const {return listener;}
 
   private:
-    Timer(timestamp_t interval) : interval(interval), listener(0) {}
-
     timestamp_t interval;
     Listener* listener;
+
+    Timer(timestamp_t interval) : interval(interval), listener(0) {}
 
     friend class Server;
   };
@@ -161,7 +164,7 @@ private:
   HashSet<ConnectSocket*> connectSockets;
   HashSet<ClientSocket*> clientSockets;
   List<ClientSocket*> socketsToDelete;
-  MultiMap<timestamp_t, Timer*> timers;
+  MultiMap<timestamp_t, Timer> timers;
   int_t sendBuffer;
   int_t receiveBuffer;
 

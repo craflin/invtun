@@ -50,9 +50,8 @@ Server::Client* Server::connect(uint32_t addr, uint16_t port)
 Server::Timer& Server::addTimer(timestamp_t interval)
 {
   timestamp_t timerTime = Time::time() + interval;
-  Timer* timer = new Timer(interval);
-  timers.insert(timerTime, timer);
-  return *timer;
+  Timer& timer = *timers.insert(timerTime, Timer(interval));
+  return timer;
 }
 
 void_t Server::stop()
@@ -88,15 +87,13 @@ bool_t Server::process()
         timestamp_t timerTime = timers.begin().key();
         if(timerTime <= Time::time())
         {
-          Timer* timer = timers.front();
-          timers.removeFront();
-          bool repeat = timer->listener && !timer->listener->execute();
+          Timer& timer = timers.front();
+          bool repeat = timer.listener && !timer.listener->execute();
           if(listener)
-            listener->executedTimer(*timer);
+            listener->executedTimer(timer);
           if(repeat)
-            timers.insert(timerTime + timer->interval, timer);
-          else
-            delete timer;
+            *timers.insert(timerTime + timer.interval, timer);
+          timers.removeFront();
         }
         else
           break;
