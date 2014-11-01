@@ -56,10 +56,13 @@ void_t EndpointHandler::resumeByDownlink()
 
 void_t EndpointHandler::establish()
 {
-  client.send(sendBuffer, sendBuffer.size());
-  sendBuffer.free();
   connected = true;
-  clientHandler.sendResumeEntry(connectionId);
+  if(!sendBuffer.isEmpty())
+  {
+    client.send(sendBuffer, sendBuffer.size());
+    sendBuffer.free();
+    clientHandler.sendResumeEntry(connectionId);
+  }
 }
 
 size_t EndpointHandler::handle(byte_t* data, size_t size)
