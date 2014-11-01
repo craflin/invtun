@@ -48,23 +48,21 @@ bool_t UplinkHandler::sendData(uint32_t connectionId, const byte_t* data, size_t
   if(!authed)
     return false;
 
-  lz4Buffer.resize(LZ4_compressBound(size));
-  int compressedSize = LZ4_compress((const char*)data, (char*)(byte_t*)lz4Buffer, size);
+  lz4Buffer.resize(sizeof(Protocol::DataMessage) + LZ4_compressBound(size));
+  int compressedSize = LZ4_compress((const char*)data, (char*)(byte_t*)lz4Buffer + sizeof(Protocol::DataMessage), size);
   if(compressedSize <= 0)
   {
     client.close();
     return false;
   }
 
-  Protocol::DataMessage dataMessage;
-  dataMessage.size = sizeof(dataMessage) + compressedSize;
-  dataMessage.messageType = Protocol::data;
-  dataMessage.connectionId = connectionId;
-  dataMessage.originalSize = size;
+  Protocol::DataMessage* dataMessage = (Protocol::DataMessage*)(byte_t*)lz4Buffer;
+  dataMessage->size = sizeof(Protocol::DataMessage) + compressedSize;
+  dataMessage->messageType = Protocol::data;
+  dataMessage->connectionId = connectionId;
+  dataMessage->originalSize = size;
   //Console::printf("sendData: compressedSize=%d, originalSize=%d, size=%llu\n", compressedSize, (int)dataMessage.originalSize, (uint64_t)size);
-  client.reserve(dataMessage.size);
-  client.send((const byte_t*)&dataMessage, sizeof(dataMessage));
-  client.send(lz4Buffer, compressedSize);
+  client.send((const byte_t*)dataMessage, dataMessage->size);
   if(!client.flush())
     serverHandler.suspendAllEntries();
   return true;
