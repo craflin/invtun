@@ -211,7 +211,7 @@ bool_t Server::ClientSocket::send(const byte_t* data, size_t size)
     server.close(*this);
     return true;
   }
-  if(sent == size)
+  if((size_t)sent >= size)
     return true;
   sendBuffer.append(data + sent, size - sent);
   server.selector.set(*this, suspended ? Socket::Selector::writeEvent : (Socket::Selector::readEvent | Socket::Selector::writeEvent));
