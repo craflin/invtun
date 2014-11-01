@@ -48,8 +48,7 @@ bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t siz
   dataMessage->connectionId = connectionId;
   dataMessage->originalSize = size;
   //Console::printf("sendData: compressedSize=%d, originalSize=%d, size=%llu\n", compressedSize, (int)dataMessage.originalSize, (uint64_t)size);
-  client.send((const byte_t*)dataMessage, dataMessage->size);
-  if(!client.flush())
+  if(!client.send((const byte_t*)dataMessage, dataMessage->size))
     clientHandler.suspendAllEndpoints();
   return true;
 }

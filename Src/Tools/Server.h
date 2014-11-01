@@ -33,7 +33,6 @@ public:
     bool_t send(const byte_t* data, size_t size) {return socket.send(data, size);}
     void_t suspend() {socket.suspend();}
     void_t resume() {socket.resume();}
-    bool_t flush() {return socket.flush();}
     void_t close() {server.close(socket);}
     uint32_t getAddr() const {return addr;}
     uint16_t getPort() const {return port;}
@@ -120,10 +119,9 @@ private:
     bool_t send(const byte_t* data, size_t size);
     void_t suspend();
     void_t resume();
-    bool_t flush();
 
     virtual void_t read();
-    virtual void_t write() {flush();}
+    virtual void_t write();
   };
 
   class ServerSocket : public CallbackSocket

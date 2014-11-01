@@ -17,8 +17,7 @@ EntryHandler::~EntryHandler()
 
 void_t EntryHandler::sendData(const byte_t* data, size_t size)
 {
-  client.send(data, size);
-  if(!client.flush())
+  if(!client.send(data, size))
     serverHandler.sendSuspendEndpoint(connectionId);
 }
 void_t EntryHandler::suspend()

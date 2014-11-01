@@ -18,8 +18,7 @@ void_t EndpointHandler::sendData(byte_t* data, size_t size)
 {
   if(connected)
   {
-    client.send(data, size);
-    if(!client.flush())
+    if(!client.send(data, size))
       clientHandler.sendSuspendEntry(connectionId);
   }
   else

@@ -192,10 +192,30 @@ void_t Server::cleanup()
 
 bool_t Server::ClientSocket::send(const byte_t* data, size_t size)
 {
-  if(sendBuffer.isEmpty())
-    server.selector.set(*this, (suspended ? 0 : Socket::Selector::readEvent) | Socket::Selector::writeEvent);
-  sendBuffer.append(data, size);
-  return true;
+  if(!sendBuffer.isEmpty())
+  {
+    sendBuffer.append(data, size);
+    return false;
+  }
+  ssize_t sent = Socket::send(data, size);
+  switch(sent)
+  {
+  case -1:
+    if(getLastError() == 0) // EWOULDBLOCK
+    {
+      sent = 0;
+      break;
+    }
+    // no break
+  case 0:
+    server.close(*this);
+    return true;
+  }
+  if(sent == size)
+    return true;
+  sendBuffer.append(data + sent, size - sent);
+  server.selector.set(*this, suspended ? Socket::Selector::writeEvent : (Socket::Selector::readEvent | Socket::Selector::writeEvent));
+  return false;
 }
 
 void_t Server::ClientSocket::suspend()
@@ -214,20 +234,21 @@ void_t Server::ClientSocket::resume()
   suspended = false;
 }
 
-bool_t Server::ClientSocket::flush()
+void_t Server::ClientSocket::write()
 {
   if(sendBuffer.isEmpty())
-    return true;
+    return;
   ssize_t sent = Socket::send(sendBuffer, sendBuffer.size());
   switch(sent)
   {
   case -1:
     if(getLastError() == 0) // EWOULDBLOCK
-      return false;
+      return;
     // no break
   case 0:
+    sendBuffer.free();
     server.close(*this);
-    return true;
+    return;
   }
   sendBuffer.removeFront(sent);
   if(sendBuffer.isEmpty())
@@ -236,9 +257,7 @@ bool_t Server::ClientSocket::flush()
     server.selector.set(*this, suspended ? 0 : Socket::Selector::readEvent);
     if(client.listener)
       client.listener->write();
-    return true;
   }
-  return false;
 }
 
 void_t Server::ClientSocket::read()
