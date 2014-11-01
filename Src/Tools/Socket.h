@@ -21,7 +21,7 @@ public:
 
   void_t swap(Socket& other);
 
-  bool_t accept(const Socket& from, uint32_t& ip, uint16_t& port);
+  bool_t accept(Socket& to, uint32_t& ip, uint16_t& port);
   bool_t setKeepAlive();
   bool_t setReuseAddress();
   bool_t setNonBlocking();

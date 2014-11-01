@@ -95,19 +95,19 @@ void_t Socket::swap(Socket& other)
   other.s = tmp;
 }
 
-bool_t Socket::accept(const Socket& from, uint32_t& ip, uint16_t& port)
+bool_t Socket::accept(Socket& to, uint32_t& ip, uint16_t& port)
 {
-  if((SOCKET)s != INVALID_SOCKET)
+  if((SOCKET)to.s != INVALID_SOCKET)
     return false;
 
   struct sockaddr_in sin;
   socklen_t val = sizeof(sin);
 #ifdef _WIN32
-  s = ::accept((SOCKET)from.s, (struct sockaddr *)&sin, &val);
+  to.s = ::accept((SOCKET)s, (struct sockaddr *)&sin, &val);
 #else
-  s = ::accept4((SOCKET)from.s, (struct sockaddr *)&sin, &val, SOCK_CLOEXEC);
+  to.s = ::accept4((SOCKET)s, (struct sockaddr *)&sin, &val, SOCK_CLOEXEC);
 #endif
-  if((SOCKET)s == INVALID_SOCKET)
+  if((SOCKET)to.s == INVALID_SOCKET)
     return false;
   port = ntohs(sin.sin_port);
   ip = ntohl(sin.sin_addr.s_addr);

@@ -118,7 +118,7 @@ void_t Server::accept(ServerSocket& socket)
 {
   ClientSocket* clientSocket = new ClientSocket(*this);
   Client& client = clientSocket->client;
-  if(!clientSocket->accept(socket, client.addr, client.port) ||
+  if(!socket.accept(*clientSocket, client.addr, client.port) ||
       !clientSocket->setNonBlocking() ||
       !clientSocket->setKeepAlive() ||
       !clientSocket->setNoDelay() ||
