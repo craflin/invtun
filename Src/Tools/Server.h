@@ -30,7 +30,6 @@ public:
   public:
     void_t setListener(Listener* listener) {this->listener = listener;}
     Listener* getListener() const {return listener;}
-    void_t reserve(size_t capacity) {socket.reserve(capacity);}
     bool_t send(const byte_t* data, size_t size) {return socket.send(data, size);}
     void_t suspend() {socket.suspend();}
     void_t resume() {socket.resume();}
@@ -118,7 +117,6 @@ private:
 
     ClientSocket(Server& server) : CallbackSocket(server), client(server, *this), suspended(false) {}
 
-    void_t reserve(size_t capacity);
     bool_t send(const byte_t* data, size_t size);
     void_t suspend();
     void_t resume();

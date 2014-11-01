@@ -190,11 +190,6 @@ void_t Server::cleanup()
   }
 }
 
-void_t Server::ClientSocket::reserve(size_t capacity)
-{
-  sendBuffer.reserve(sendBuffer.size() + capacity);
-}
-
 bool_t Server::ClientSocket::send(const byte_t* data, size_t size)
 {
   if(sendBuffer.isEmpty())
