@@ -82,7 +82,7 @@ bool_t Server::process()
     }
     else
     {
-      while(!timers.isEmpty())
+      do
       {
         timestamp_t timerTime = timers.begin().key();
         if(timerTime <= Time::time())
@@ -92,12 +92,12 @@ bool_t Server::process()
           if(timer.listener != &cleanupTimer && listener)
             listener->executedTimer(timer);
           if(repeat)
-            *timers.insert(timerTime + timer.interval, timer);
+            timers.insert(timerTime + timer.interval, timer);
           timers.removeFront();
         }
         else
           break;
-      }
+      } while(!timers.isEmpty());
     }
   }
   return true;
