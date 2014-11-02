@@ -57,8 +57,6 @@ Server::Timer& Server::addTimer(timestamp_t interval)
 void_t Server::stop()
 {
   stopped = true;
-  for(List<ServerSocket*>::Iterator i = serverSockets.begin(), end = serverSockets.end(); i != end; ++i)
-    (*i)->close();
 }
 
 bool_t Server::process()
