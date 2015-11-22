@@ -1,6 +1,8 @@
 
 name = "invtun"
 
+buildDir = "Build/$(configuration)/$(target)"
+
 targets = {
 
   all = {
@@ -71,24 +73,14 @@ targets = {
     }
   }
   
-  libnstd = cppStaticLibrary + {
-    folder = "Libraries"
-    includePaths = { "Ext/libnstd/include" }
-    buildDir = "Build/$(configuration)/$(target)"
-    root = { "Ext/libnstd/src", "Ext/libnstd/include/nstd" }
-    files = {
-      "Ext/libnstd/src/*.cpp" = cppSource,
-      "Ext/libnstd/include/nstd/*.h"
-    }
-    if tool == "vcxproj" {
-      defines += { "_CRT_SECURE_NO_WARNINGS" }
-    }
+  include "Ext/libnstd/libnstd.mare"
+  libnstd += {
+    folder = "Ext"
   }
   
   liblz4 = cppStaticLibrary + {
-    folder = "Libraries"
+    folder = "Ext"
     includePaths = { "Ext/lz4" }
-    buildDir = "Build/$(configuration)/$(target)"
     root = { "Ext/lz4" }
     files = {
       "Ext/lz4/lz4.c" = cSource,
