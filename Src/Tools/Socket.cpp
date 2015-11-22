@@ -1,5 +1,6 @@
 
 #ifdef _WIN32
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <winsock2.h>
 #else
 #include <unistd.h>
@@ -513,7 +514,7 @@ void_t Socket::Selector::remove(Socket& socket)
 #endif
 }
 
-bool_t Socket::Selector::select(Socket*& socket, uint_t& events, timestamp_t timeout)
+bool_t Socket::Selector::select(Socket*& socket, uint_t& events, int64_t timeout)
 {
   SocketSelectorPrivate* p = (SocketSelectorPrivate*)data;
 #ifdef _WIN32

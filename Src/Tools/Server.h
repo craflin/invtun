@@ -66,10 +66,10 @@ public:
     Listener* getListener() const {return listener;}
 
   private:
-    timestamp_t interval;
+    int64_t interval;
     Listener* listener;
 
-    Timer(timestamp_t interval) : interval(interval), listener(0) {}
+    Timer(int64_t interval) : interval(interval), listener(0) {}
 
     friend class Server;
   };
@@ -92,7 +92,7 @@ public:
 
   bool_t listen(uint16_t port);
   Client* connect(uint32_t addr, uint16_t port);
-  Timer& addTimer(timestamp_t interval);
+  Timer& addTimer(int64_t interval);
   bool_t process();
   void_t stop();
 
@@ -167,7 +167,7 @@ private:
   HashSet<ConnectSocket*> connectSockets;
   HashSet<ClientSocket*> clientSockets;
   List<ClientSocket*> socketsToDelete;
-  MultiMap<timestamp_t, Timer> timers;
+  MultiMap<int64_t, Timer> timers;
   int_t sendBuffer;
   int_t receiveBuffer;
   CleanupTimer cleanupTimer;
