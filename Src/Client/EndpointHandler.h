@@ -1,20 +1,24 @@
 
 #pragma once
 
-#include "Tools/Server.h"
+#include <nstd/Buffer.h>
+#include <nstd/Socket/Server.h>
+
+#include "Callback.h"
 
 class ClientHandler;
 
-class EndpointHandler : public Server::Client::Listener
+class EndpointHandler : public Callback
 {
 public:
-  EndpointHandler(ClientHandler& clientHandler, Server::Client& client, uint32_t connectionId);
+  EndpointHandler(ClientHandler& clientHandler, Server& server, Server::Handle& handle, uint32_t connectionId, uint16_t port);
   ~EndpointHandler();
 
+  bool_t isConnected() const {return connected;}
+  uint16_t getPort() const {return port;}
   uint32_t getConnectionId() const {return connectionId;}
 
   void_t sendData(byte_t* data, size_t size);
-  void_t disconnect() {client.close();}
   void_t suspend();
   void_t resume();
   void_t suspendByDownlink();
@@ -22,15 +26,19 @@ public:
 
 private:
   ClientHandler& clientHandler;
-  Server::Client& client;
+  Server& server;
+  Server::Handle& handle;
   uint32_t connectionId;
+  uint16_t port;
   bool_t connected;
   Buffer sendBuffer;
   bool_t suspended;
   bool_t suspendedByDownlink;
 
-private: // Server::Client::Listener
-  virtual void_t establish();
-  virtual size_t handle(byte_t* data, size_t size);
-  virtual void_t write();
+private: // Callback
+  virtual void_t openedClient();
+  virtual void_t abolishedClient();
+  virtual void_t closedClient();
+  virtual void_t readClient();
+  virtual void_t writeClient();
 };

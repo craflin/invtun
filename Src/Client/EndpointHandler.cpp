@@ -1,24 +1,27 @@
 
+#include <nstd/Console.h>
+#include <nstd/Socket/Socket.h>
+
 #include "EndpointHandler.h"
 #include "ClientHandler.h"
 
-EndpointHandler::EndpointHandler(ClientHandler& clientHandler, Server::Client& client, uint32_t connectionId) :
-  clientHandler(clientHandler), client(client), connectionId(connectionId), connected(false), suspended(false), suspendedByDownlink(false)
+EndpointHandler::EndpointHandler(ClientHandler& clientHandler, Server& server, Server::Handle& handle, uint32_t connectionId, uint16_t port) :
+  clientHandler(clientHandler), server(server), handle(handle), connectionId(connectionId), port(port), connected(false), suspended(false), suspendedByDownlink(false)
 {
-  client.setListener(this);
+  server.setUserData(handle, this);
 }
 
 EndpointHandler::~EndpointHandler()
 {
-  client.setListener(0);
-  client.close();
+  server.close(handle);
 }
 
 void_t EndpointHandler::sendData(byte_t* data, size_t size)
 {
   if(connected)
   {
-    if(!client.send(data, size))
+    size_t postponed;
+    if(server.write(handle, data, size, &postponed) && postponed)
       clientHandler.sendSuspendEntry(connectionId);
   }
   else
@@ -31,48 +34,63 @@ void_t EndpointHandler::sendData(byte_t* data, size_t size)
 void_t EndpointHandler::suspend()
 {
   suspended = true;
-  client.suspend();
+  server.suspend(handle);
 }
 
 void_t EndpointHandler::resume()
 {
   suspended = false;
   if(!suspendedByDownlink)
-    client.resume();
+    server.resume(handle);
 }
 
 void_t EndpointHandler::suspendByDownlink()
 {
   suspendedByDownlink = true;
-  client.suspend();
+  server.suspend(handle);
 }
 
 void_t EndpointHandler::resumeByDownlink()
 {
   suspendedByDownlink = false;
   if(!suspended)
-    client.resume();
+    server.resume(handle);
 }
 
-void_t EndpointHandler::establish()
+void_t EndpointHandler::openedClient()
 {
+  Console::printf("Established endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port);
+
   connected = true;
   if(!sendBuffer.isEmpty())
   {
-    client.send(sendBuffer, sendBuffer.size());
+    server.write(handle, sendBuffer, sendBuffer.size());
     sendBuffer.free();
     clientHandler.sendResumeEntry(connectionId);
   }
 }
 
-size_t EndpointHandler::handle(byte_t* data, size_t size)
+void_t EndpointHandler::abolishedClient()
 {
-  if(!clientHandler.sendDataToDownlink(connectionId, data, size))
-    client.close();
-  return size;
+  Console::printf("Could not establish endpoint connection with %s:%hu: %s\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port, (const char_t*)Socket::getErrorString());
+
+  clientHandler.removeEndpoint(connectionId);
 }
 
-void_t EndpointHandler::write()
+void_t EndpointHandler::closedClient()
+{
+  clientHandler.removeEndpoint(connectionId);
+}
+
+void_t EndpointHandler::readClient()
+{
+  byte_t buffer[RECV_BUFFER_SIZE];
+  size_t size;
+  if(server.read(handle, buffer, sizeof(buffer), size))
+    clientHandler.sendDataToDownlink(connectionId, buffer, size);
+}
+
+void_t EndpointHandler::writeClient()
 {
   clientHandler.sendResumeEntry(connectionId);
 }

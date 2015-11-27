@@ -1,20 +1,23 @@
 
 #pragma once
 
-#include "Tools/Server.h"
+#include <nstd/Socket/Server.h>
+
+#include "Callback.h"
 
 class ServerHandler;
 
-class EntryHandler : public Server::Client::Listener
+class EntryHandler : public Callback
 {
 public:
-  EntryHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId);
+  EntryHandler(ServerHandler& serverHandler, Server& server, Server::Handle& handle, uint32_t connectionId, uint32_t addr, uint16_t port);
   ~EntryHandler();
 
   uint32_t getConnectionId() const {return connectionId;}
+  uint32_t getAddr() const {return addr;}
+  uint16_t getPort() const {return port;}
 
   void_t sendData(const byte_t* data, size_t size);
-  void_t disconnect() {client.close();}
   void_t suspend();
   void_t resume();
   void_t suspendByUplink();
@@ -22,12 +25,16 @@ public:
 
 private:
   ServerHandler& serverHandler;
-  Server::Client& client;
+  Server& server;
+  Server::Handle& handle;
   uint32_t connectionId;
+  uint32_t addr;
+  uint16_t port;
   bool_t suspended;
   bool_t suspendedByUplink;
 
 private: // Server::Client::Listener
-  virtual size_t handle(byte_t* data, size_t size);
-  virtual void_t write();
+  virtual void_t readClient();
+  virtual void_t writeClient();
+  virtual void_t closedClient();
 };

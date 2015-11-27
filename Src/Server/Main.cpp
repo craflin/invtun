@@ -10,6 +10,7 @@
 
 #include <nstd/Console.h>
 #include <nstd/String.h>
+#include <nstd/Socket/Socket.h>
 
 #include "ServerHandler.h"
 
@@ -81,10 +82,14 @@ int_t main(int_t argc, char_t* argv[])
 #endif
 
   // start server
-  Server server(SEND_BUFFER_SIZE, RECV_BUFFER_SIZE);
-  ServerHandler serverHandler(uplinkPort, secret, ports);
-  server.setListener(&serverHandler);
-  if(!server.listen(uplinkPort))
+  Server server;
+  server.setKeepAlive(true);
+  server.setNoDelay(true);
+  server.setSendBufferSize(SEND_BUFFER_SIZE);
+  server.setReceiveBufferSize(RECV_BUFFER_SIZE);
+
+  ServerHandler serverHandler(server, secret);
+  if(!serverHandler.listen(uplinkPort))
   {
     Console::errorf("error: Could not listen on port %hu: %s\n", uplinkPort, (const char_t*)Socket::getErrorString());
     return -1;
@@ -93,17 +98,42 @@ int_t main(int_t argc, char_t* argv[])
   for (HashMap<uint16_t, uint16_t>::Iterator i = ports.begin(), end = ports.end(); i != end; ++i)
   {
     uint16_t port = i.key();
-    if(!server.listen(port))
+    if(!serverHandler.listen(port, *i))
     {
       Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getErrorString());
       return -1;
     }
     Console::printf("Listening for entries on port %hu...\n", port);
   }
-  if(!server.process())
+
+  for(Server::Event event; server.poll(event);)
   {
-    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getErrorString());
-    return -1;
+    Callback* callback = (Callback*)event.userData;
+    switch(event.type)
+    {
+    case Server::Event::failType:
+      callback->abolishedClient();
+      break;
+    case Server::Event::openType:
+      callback->openedClient();
+      break;
+    case Server::Event::readType:
+      callback->readClient();
+      break;
+    case Server::Event::writeType:
+      callback->writeClient();
+      break;
+    case Server::Event::closeType:
+      callback->closedClient();
+      break;
+    case Server::Event::acceptType:
+      callback->acceptClient(*event.handle);
+      break;
+    case Server::Event::timerType:
+      callback->executeTimer();
+      break;
+    }
   }
+  Console::errorf("error: Could not run poll loop: %s\n", (const char_t*)Socket::getErrorString());
   return 0;
 }

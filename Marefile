@@ -30,6 +30,7 @@ targets = {
       "Src/Tools/**.cpp" = cppSource
       "Src/Tools/**.h"
       "Src/Protocol.h"
+      "Src/Callback.h"
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
@@ -62,6 +63,7 @@ targets = {
       "Src/Tools/**.cpp" = cppSource
       "Src/Tools/**.h"
       "Src/Protocol.h"
+      "Src/Callback.h"
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
@@ -76,6 +78,7 @@ targets = {
   include "Ext/libnstd/libnstd.mare"
   libnstd += {
     folder = "Ext"
+    enableSocket = "true"
   }
   
   liblz4 = cppStaticLibrary + {

@@ -1,19 +1,21 @@
 
+#include <nstd/Console.h>
+#include <nstd/Socket/Socket.h>
+
 #include <lz4.h>
 
 #include "DownlinkHandler.h"
 #include "ClientHandler.h"
 
-DownlinkHandler::DownlinkHandler(ClientHandler& clientHandler, Server::Client& client) :
-  clientHandler(clientHandler), client(client), authed(false)
+DownlinkHandler::DownlinkHandler(ClientHandler& clientHandler, Server& server, Server::Handle& handle, uint32_t addr, uint16_t port) :
+  clientHandler(clientHandler), server(server), handle(handle), addr(addr), port(port), connected(false), authed(false)
 {
-  client.setListener(this);
+  server.setUserData(handle, this);
 }
 
 DownlinkHandler::~DownlinkHandler()
 {
-  client.setListener(0);
-  client.close();
+  server.close(handle);
 }
 
 bool_t DownlinkHandler::sendDisconnect(uint32_t connectionId)
@@ -25,7 +27,7 @@ bool_t DownlinkHandler::sendDisconnect(uint32_t connectionId)
   disconnectMessage.size = sizeof(disconnectMessage);
   disconnectMessage.messageType = Protocol::disconnect;
   disconnectMessage.connectionId = connectionId;
-  client.send((const byte_t*)&disconnectMessage, sizeof(disconnectMessage));
+  server.write(handle, (const byte_t*)&disconnectMessage, sizeof(disconnectMessage));
   return true;
 }
 
@@ -38,7 +40,7 @@ bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t siz
   int compressedSize = LZ4_compress((const char*)data, (char*)(byte_t*)lz4Buffer + sizeof(Protocol::DataMessage), size);
   if(compressedSize <= 0)
   {
-    client.close();
+    clientHandler.removeDownlink();
     return false;
   }
 
@@ -47,8 +49,7 @@ bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t siz
   dataMessage->messageType = Protocol::data;
   dataMessage->connectionId = connectionId;
   dataMessage->originalSize = size;
-  //Console::printf("sendData: compressedSize=%d, originalSize=%d, size=%llu\n", compressedSize, (int)dataMessage.originalSize, (uint64_t)size);
-  if(!client.send((const byte_t*)dataMessage, dataMessage->size))
+  if(!server.write(handle, (const byte_t*)dataMessage, dataMessage->size))
     clientHandler.suspendAllEndpoints();
   return true;
 }
@@ -62,7 +63,7 @@ bool_t DownlinkHandler::sendSuspend(uint32_t connectionId)
   suspendMessage.size = sizeof(suspendMessage);
   suspendMessage.messageType = Protocol::suspend;
   suspendMessage.connectionId = connectionId;
-  client.send((const byte_t*)&suspendMessage, sizeof(suspendMessage));
+  server.write(handle, (const byte_t*)&suspendMessage, sizeof(suspendMessage));
   return true;
 }
 
@@ -75,17 +76,28 @@ bool_t DownlinkHandler::sendResume(uint32_t connectionId)
   resumeMessage.size = sizeof(resumeMessage);
   resumeMessage.messageType = Protocol::resume;
   resumeMessage.connectionId = connectionId;
-  client.send((const byte_t*)&resumeMessage, sizeof(resumeMessage));
+  server.write(handle, (const byte_t*)&resumeMessage, sizeof(resumeMessage));
   return true;
 }
 
-void_t DownlinkHandler::establish()
+void_t DownlinkHandler::openedClient()
 {
+  Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+
+  connected = true;
+
   Protocol::AuthMessage authMessage;
   authMessage.size = sizeof(authMessage);
   authMessage.messageType = Protocol::auth;
   Protocol::setString(authMessage.secret, clientHandler.getSecret());
-  client.send((const byte_t*)&authMessage, sizeof(authMessage));
+  server.write(handle, (const byte_t*)&authMessage, sizeof(authMessage));
+}
+
+void_t DownlinkHandler::abolishedClient()
+{
+    Console::printf("Could not establish downlink connection with %s:%hu: %s\n", (const char_t*)Socket::inetNtoA(addr), port, (const char_t*)Socket::getErrorString());
+
+    clientHandler.removeDownlink();
 }
 
 void_t DownlinkHandler::handleMessage(Protocol::MessageType messageType, byte_t* data, size_t size)
@@ -123,24 +135,22 @@ void_t DownlinkHandler::handleMessage(Protocol::MessageType messageType, byte_t*
 
 void_t DownlinkHandler::handleConnectMessage(const Protocol::ConnectMessage& connect)
 {
-  if(!clientHandler.createConnection(connect.connectionId, connect.port))
+  if(!clientHandler.createEndpoint(connect.connectionId, connect.port))
     sendDisconnect(connect.connectionId);
 }
 
 void_t DownlinkHandler::handleDisconnectMessage(const Protocol::DisconnectMessage& disconnect)
 {
-  clientHandler.removeConnection(disconnect.connectionId);
+  clientHandler.removeEndpoint(disconnect.connectionId);
 }
 
 void_t DownlinkHandler::handleDataMessage(const Protocol::DataMessage& message, byte_t* data, size_t size)
 {
-  //Console::printf("recvData: compressedSize=%d, originalSize=%d\n", (int)size, (int)message.originalSize);
-
   int originalSize = message.originalSize;
   lz4Buffer.resize(originalSize);
   if(LZ4_decompress_safe((const char*)data,(char*)(byte_t*)lz4Buffer, size, originalSize) != originalSize)
   {
-    client.close();
+    clientHandler.removeDownlink();
     return;
   }
 
@@ -157,9 +167,17 @@ void_t DownlinkHandler::handleResumeMessage(const Protocol::ResumeMessage& resum
   clientHandler.resumeEndpoint(resumeMessage.connectionId);
 }
 
-size_t DownlinkHandler::handle(byte_t* data, size_t size)
+void_t DownlinkHandler::readClient()
 {
-  byte_t* pos = data;
+  size_t size;
+  size_t oldSize = readBuffer.size();
+  readBuffer.resize(LZ4_compressBound(RECV_BUFFER_SIZE) + sizeof(Protocol::DataMessage) + 1);
+  if(!server.read(handle, (byte_t*)readBuffer + readBuffer.size(), readBuffer.capacity() - readBuffer.size(), size))
+    return;
+  size += oldSize;
+  readBuffer.resize(size);
+
+  byte_t* pos = readBuffer;
   while(size > 0)
   {
     if(size < sizeof(Protocol::Header))
@@ -167,8 +185,8 @@ size_t DownlinkHandler::handle(byte_t* data, size_t size)
     Protocol::Header* header = (Protocol::Header*)pos;
     if(header->size < sizeof(Protocol::Header))
     {
-      client.close();
-      return 0;
+      clientHandler.removeDownlink();
+      return;
     }
     if(size < header->size)
       break;
@@ -176,15 +194,20 @@ size_t DownlinkHandler::handle(byte_t* data, size_t size)
     pos += header->size;
     size -= header->size;
   }
+  readBuffer.removeFront(pos - (byte_t*)readBuffer);
   if(size > LZ4_compressBound(RECV_BUFFER_SIZE) + sizeof(Protocol::DataMessage))
   {
-    client.close();
-    return 0;
+    clientHandler.removeDownlink();
+    return;
   }
-  return pos - data;
 }
 
-void_t DownlinkHandler::write()
+void_t DownlinkHandler::writeClient()
 {
   clientHandler.resumeAllEndpoints();
+}
+
+void_t DownlinkHandler::closedClient()
+{
+  clientHandler.removeDownlink();
 }

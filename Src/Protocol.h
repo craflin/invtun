@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <nstd/Base.h>
+#include <nstd/String.h>
 
 class Protocol
 {
@@ -66,7 +66,7 @@ public:
     Memory::copy(str, (const char_t*)value, size);
     str[N - 1] = '\0';
   }
-  
+
   template<size_t N> static String getString(char_t(&str)[N])
   {
     str[N - 1] = '\0';

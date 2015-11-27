@@ -1,20 +1,18 @@
 
 #include <nstd/Thread.h>
 #include <nstd/Console.h>
+#include <nstd/Debug.h>
+#include <nstd/Socket/Socket.h>
 
 #include "ClientHandler.h"
 #include "EndpointHandler.h"
 #include "DownlinkHandler.h"
 
 ClientHandler::ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) :
-  server(server), addr(addr), port(port), secret(secret), downlink(0), suspendedAlldEnpoints(false)
-{
-  server.setListener(this);
-}
+  server(server), addr(addr), port(port), secret(secret), downlink(0), suspendedAlldEnpoints(false), reconnectTimer(0) {}
 
 ClientHandler::~ClientHandler()
 {
-  server.setListener(0);
   for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
     delete *i;
   delete downlink;
@@ -24,97 +22,69 @@ bool_t ClientHandler::connect()
 {
   ASSERT(!downlink);
   Console::printf("Establishing downlink connection with %s:%hu...\n", (const char_t*)Socket::inetNtoA(addr), port);
-  Server::Client* client = server.connect(addr, port);
-  if(!client)
+  Server::Handle* handle = server.connect(addr, port, 0);
+  if(!handle)
     return false;
-  downlink = new DownlinkHandler(*this, *client);
+  downlink = new DownlinkHandler(*this, server, *handle, addr, port);
   return true;
 }
 
-void_t ClientHandler::establishedClient(Server::Client& client)
-{
-  if(client.getListener() == downlink)
-    Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
-  else
-    Console::printf("Established endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
-}
-
-void_t ClientHandler::closedClient(Server::Client& client)
-{
-  if(!client.getListener())
-    return;
-  if(client.getListener() == downlink)
-  {
-    Console::printf("Closed downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
-    delete downlink;
-    downlink = 0;
-
-    server.addTimer(10 * 1000); // start reconnect timer
-
-    for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
-      (*i)->disconnect();
-  }
-  else
-  {
-    Console::printf("Closed endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort());
-    EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
-    uint32_t connectionId = endpoint->getConnectionId();
-    if(downlink)
-      downlink->sendDisconnect(connectionId);
-    endpoints.remove(connectionId);
-    delete endpoint;
-  }
-}
-
-void_t ClientHandler::abolishedClient(Server::Client& client)
-{
-  if(client.getListener() == downlink)
-  {
-    Console::printf("Could not establish downlink connection with %s:%hu: %s\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort(), (const char_t*)Socket::getErrorString());
-    delete downlink;
-    downlink = 0;
-
-    server.addTimer(10 * 1000); // start reconnect timer
-  }
-  else
-  {
-    EndpointHandler* endpoint = (EndpointHandler*)client.getListener();
-    Console::printf("Could not establish endpoint connection with %s:%hu: %s\n", (const char_t*)Socket::inetNtoA(client.getAddr()), client.getPort(), (const char_t*)Socket::getErrorString());
-    uint32_t connectionId = endpoint->getConnectionId();
-    if(downlink)
-      downlink->sendDisconnect(connectionId);
-    endpoints.remove(connectionId);
-    delete endpoint;
-  }
-}
-
-void_t ClientHandler::executedTimer(Server::Timer& timer)
+void_t ClientHandler::executeTimer()
 {
   //Console::printf("Executed timer\n");
   ASSERT(!downlink);
-  if(!connect())
-    server.addTimer(10 * 1000);
+  if(connect())
+  {
+    if(reconnectTimer)
+    {
+      server.close(*reconnectTimer);
+      reconnectTimer = 0;
+    }
+  }
 }
 
-bool_t ClientHandler::createConnection(uint32_t connectionId, uint16_t port)
+bool_t ClientHandler::removeDownlink()
 {
   if(!downlink)
     return false;
-  Server::Client* client = server.connect(Socket::loopbackAddr, port);
-  if(!client)
+  if(downlink->isConnected())
+    Console::printf("Closed downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(downlink->getAddr()), downlink->getPort());
+  delete downlink;
+  downlink = 0;
+
+  for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
+    delete *i;
+  endpoints.clear(),
+
+  reconnectTimer = server.createTimer(10 * 1000, this); // start reconnect timer
+  return true;
+}
+
+bool_t ClientHandler::createEndpoint(uint32_t connectionId, uint16_t port)
+{
+  Server::Handle* handle = server.connect(Socket::loopbackAddr, port, 0);
+  if(!handle)
     return false;
-  EndpointHandler* endpoint = new EndpointHandler(*this, *client, connectionId);
+  EndpointHandler* endpoint = new EndpointHandler(*this, server, *handle, connectionId, port);
   endpoints.append(connectionId, endpoint);
   return true;
 }
 
-bool_t ClientHandler::removeConnection(uint32_t connectionId)
+bool_t ClientHandler::removeEndpoint(uint32_t connectionId)
 {
   HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
   if(it == endpoints.end())
     return false;
   EndpointHandler* endpoint = *it;
-  endpoint->disconnect();
+
+  if(endpoint->isConnected())
+    Console::printf("Closed endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
+
+  delete endpoint;
+  endpoints.remove(it);
+
+  if(downlink)
+    downlink->sendDisconnect(connectionId);
   return true;
 }
 

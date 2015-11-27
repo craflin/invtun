@@ -3,57 +3,62 @@
 #include "ServerHandler.h"
 #include "UplinkHandler.h"
 
-EntryHandler::EntryHandler(ServerHandler& serverHandler, Server::Client& client, uint32_t connectionId) :
-  serverHandler(serverHandler), client(client), connectionId(connectionId), suspended(false), suspendedByUplink(false)
+EntryHandler::EntryHandler(ServerHandler& serverHandler, Server& server, Server::Handle& handle, uint32_t connectionId, uint32_t addr, uint16_t port) :
+  serverHandler(serverHandler), server(server), handle(handle), connectionId(connectionId), addr(addr), port(port), suspended(false), suspendedByUplink(false)
 {
-  client.setListener(this);
+  server.setUserData(handle, this);
 }
 
 EntryHandler::~EntryHandler()
 {
-  client.setListener(0);
-  client.close();
+  server.close(handle);
 }
 
 void_t EntryHandler::sendData(const byte_t* data, size_t size)
 {
-  if(!client.send(data, size))
+  if(!server.write(handle, data, size))
     serverHandler.sendSuspendEndpoint(connectionId);
 }
 void_t EntryHandler::suspend()
 {
   suspended = true;
-  client.suspend();
+  server.suspend(handle);
 }
 
 void_t EntryHandler::resume()
 {
   suspended = false;
   if(!suspendedByUplink)
-    client.resume();
+    server.resume(handle);
 }
 
 void_t EntryHandler::suspendByUplink()
 {
   suspendedByUplink = true;
-  client.suspend();
+  server.suspend(handle);
 }
 
 void_t EntryHandler::resumeByUplink()
 {
   suspendedByUplink = false;
   if(!suspended)
-    client.resume();
+    server.resume(handle);
 }
 
-size_t EntryHandler::handle(byte_t* data, size_t size)
+void_t EntryHandler::closedClient()
 {
-  if(!serverHandler.sendDataToUplink(connectionId, data, size))
-    client.close();
-  return size;
+  serverHandler.removeEntry(connectionId);
 }
 
-void_t EntryHandler::write()
+void_t EntryHandler::readClient()
+{
+  byte_t buffer[RECV_BUFFER_SIZE];
+  size_t size;
+  if (server.read(handle, buffer, sizeof(buffer), size))
+    serverHandler.sendDataToUplink(connectionId, buffer, size);
+}
+
+void_t EntryHandler::writeClient()
 {
   serverHandler.sendResumeEndpoint(connectionId);
 }

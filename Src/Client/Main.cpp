@@ -8,6 +8,7 @@
 #include <cstring>
 #endif
 
+#include <nstd/Socket/Socket.h>
 #include <nstd/String.h>
 #include <nstd/Console.h>
 
@@ -71,17 +72,45 @@ int_t main(int_t argc, char_t* argv[])
 #endif
 
   // start select loop
-  Server server(SEND_BUFFER_SIZE, RECV_BUFFER_SIZE);
+  Server server;
+  server.setKeepAlive(true);
+  server.setNoDelay(true);
+  server.setSendBufferSize(SEND_BUFFER_SIZE);
+  server.setReceiveBufferSize(RECV_BUFFER_SIZE);
   ClientHandler clientHandler(server, Socket::inetAddr(address), uplinkPort, secret);
   if(!clientHandler.connect())
   {
     Console::errorf("error: Could not connect to %s:%hu: %s\n", (const char_t*)address, uplinkPort, (const char_t*)Socket::getErrorString());
     return -1;
   }
-  if(!server.process())
+  for(Server::Event event; server.poll(event);)
   {
-    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getErrorString());
-    return -1;
+    Callback* callback = (Callback*)event.userData;
+    switch(event.type)
+    {
+    case Server::Event::failType:
+      callback->abolishedClient();
+      break;
+    case Server::Event::openType:
+      callback->openedClient();
+      break;
+    case Server::Event::readType:
+      callback->readClient();
+      break;
+    case Server::Event::writeType:
+      callback->writeClient();
+      break;
+    case Server::Event::closeType:
+      callback->closedClient();
+      break;
+    case Server::Event::acceptType:
+      callback->acceptClient(*event.handle);
+      break;
+    case Server::Event::timerType:
+      callback->executeTimer();
+      break;
+    }
   }
-  return 0;
+  Console::errorf("error: Could not run poll loop: %s\n", (const char_t*)Socket::getErrorString());
+  return -1;
 }

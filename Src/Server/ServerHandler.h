@@ -1,10 +1,11 @@
 
 #pragma once
 
-#include <nstd/HashSet.h>
 #include <nstd/HashMap.h>
+#include <nstd/String.h>
+#include <nstd/Socket/Server.h>
 
-#include "Tools/Server.h"
+#include "Callback.h"
 
 #define SEND_BUFFER_SIZE (256 * 1024)
 #define RECV_BUFFER_SIZE (256 * 1024)
@@ -12,14 +13,18 @@
 class EntryHandler;
 class UplinkHandler;
 
-class ServerHandler : public Server::Listener
+class ServerHandler : public Callback
 {
 public:
-  ServerHandler(uint16_t uplinkPort, const String& secret, const HashMap<uint16_t, uint16_t>& ports);
+  ServerHandler(Server& server, const String& secret);
   ~ServerHandler();
 
   const String& getSecret() const {return secret;}
 
+  bool_t listen(uint16_t port);
+  bool_t listen(uint16_t port, uint16_t mappedPort);
+
+  bool_t removeUplink();
   bool_t removeEntry(uint32_t connectionId);
   bool_t sendDataToEntry(uint32_t connectionId, byte_t* data, size_t size);
   bool_t sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size);
@@ -31,18 +36,18 @@ public:
   void_t resumeAllEntries();
 
 private:
-  uint16_t uplinkPort;
+  Server& server;
+  Server::Handle* tunnelListener;
+  HashMap<Server::Handle*, uint16_t> inboundListeners;
   String secret;
   UplinkHandler* uplink;
   HashMap<uint32_t, EntryHandler*> entries;
-  HashMap<uint16_t, uint16_t> portMapping;
   uint32_t nextConnectionId;
   bool_t suspendedAllEntries;
 
 private:
-  uint16_t mapPort(uint16_t port);
+  uint16_t mapPort(Server::Handle& handle) {return *inboundListeners.find(&handle);}
 
-private: // Server::Listener
-  virtual void_t acceptedClient(Server::Client& client, uint16_t localPort);
-  virtual void_t closedClient(Server::Client& client);
+private: // Callback
+  virtual void_t acceptClient(Server::Handle& handle);
 };
