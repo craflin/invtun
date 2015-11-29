@@ -20,19 +20,19 @@ ServerHandler::~ServerHandler()
     server.close(*i.key());
 }
 
-bool_t ServerHandler::listen(uint16_t port)
+bool_t ServerHandler::listen(uint32_t addr, uint16_t port)
 {
   if(tunnelListener)
     return false;
-  tunnelListener = server.listen(port, this);
+  tunnelListener = server.listen(addr, port, this);
   if(!tunnelListener)
     return false;
   return true;
 }
 
-bool_t ServerHandler::listen(uint16_t port, uint16_t mappedPort)
+bool_t ServerHandler::listen(uint32_t addr, uint16_t port, uint16_t mappedPort)
 {
-  Server::Handle* handle = server.listen(port, this);
+  Server::Handle* handle = server.listen(addr, port, this);
   if(!handle)
     return false;
   inboundListeners.append(handle, mappedPort);
@@ -50,6 +50,7 @@ bool_t ServerHandler::removeUplink()
   for(HashMap<uint32_t, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
     delete *i;
   entries.clear();
+  return true;
 }
 
 bool_t ServerHandler::removeEntry(uint32_t connectionId)

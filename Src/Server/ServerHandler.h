@@ -21,8 +21,8 @@ public:
 
   const String& getSecret() const {return secret;}
 
-  bool_t listen(uint16_t port);
-  bool_t listen(uint16_t port, uint16_t mappedPort);
+  bool_t listen(uint32_t addr, uint16_t port);
+  bool_t listen(uint32_t addr, uint16_t port, uint16_t mappedPort);
 
   bool_t removeUplink();
   bool_t removeEntry(uint32_t connectionId);

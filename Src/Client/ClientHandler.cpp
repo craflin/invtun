@@ -1,5 +1,4 @@
 
-#include <nstd/Thread.h>
 #include <nstd/Console.h>
 #include <nstd/Debug.h>
 #include <nstd/Socket/Socket.h>
