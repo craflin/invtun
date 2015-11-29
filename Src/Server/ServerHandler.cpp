@@ -1,5 +1,5 @@
 
-#include <nstd/Console.h>
+#include <nstd/Log.h>
 #include <nstd/Socket/Socket.h>
 
 #include "ServerHandler.h"
@@ -43,7 +43,7 @@ bool_t ServerHandler::removeUplink()
 {
   if(!uplink)
     return false;
-  Console::printf("Closed uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(uplink->getAddr()), uplink->getPort());
+  Log::infof("Closed uplink connection with %s:%hu", (const char_t*)Socket::inetNtoA(uplink->getAddr()), uplink->getPort());
   delete uplink;
   uplink= 0;
 
@@ -60,7 +60,7 @@ bool_t ServerHandler::removeEntry(uint32_t connectionId)
     return false;
   EntryHandler* entry = *it;
 
-  Console::printf("Closed entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(entry->getAddr()), entry->getPort());
+  Log::infof("Closed entry connection with %s:%hu", (const char_t*)Socket::inetNtoA(entry->getAddr()), entry->getPort());
 
   delete entry;
   entries.remove(it);
@@ -152,7 +152,7 @@ void_t ServerHandler::acceptClient(Server::Handle& listenerHandle)
       server.close(*handle);
       return;
     }
-    Console::printf("Accepted uplink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+    Log::infof("Accepted uplink connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
     uplink = new UplinkHandler(*this, server, *handle, addr, port);
   }
   else
@@ -169,7 +169,7 @@ void_t ServerHandler::acceptClient(Server::Handle& listenerHandle)
       server.close(*handle);
       return;
     }
-    Console::printf("Accepted entry connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+    Log::infof("Accepted entry connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
     EntryHandler* entry = new EntryHandler(*this, server, *handle, connectionId, addr, port);
     entries.append(connectionId, entry);
   }

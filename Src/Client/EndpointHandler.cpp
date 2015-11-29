@@ -1,5 +1,5 @@
 
-#include <nstd/Console.h>
+#include <nstd/Log.h>
 #include <nstd/Socket/Socket.h>
 
 #include "EndpointHandler.h"
@@ -59,7 +59,7 @@ void_t EndpointHandler::resumeByDownlink()
 
 void_t EndpointHandler::openedClient()
 {
-  Console::printf("Established endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port);
+  Log::infof("Established endpoint connection with %s:%hu", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port);
 
   connected = true;
   if(!sendBuffer.isEmpty())
@@ -72,7 +72,7 @@ void_t EndpointHandler::openedClient()
 
 void_t EndpointHandler::abolishedClient()
 {
-  Console::printf("Could not establish endpoint connection with %s:%hu: %s\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port, (const char_t*)Socket::getErrorString());
+  Log::infof("Could not establish endpoint connection with %s:%hu: %s", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port, (const char_t*)Socket::getErrorString());
 
   clientHandler.removeEndpoint(connectionId);
 }

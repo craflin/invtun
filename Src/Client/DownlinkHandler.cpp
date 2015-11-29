@@ -1,5 +1,5 @@
 
-#include <nstd/Console.h>
+#include <nstd/Log.h>
 #include <nstd/Socket/Socket.h>
 
 #include <lz4.h>
@@ -82,7 +82,7 @@ bool_t DownlinkHandler::sendResume(uint32_t connectionId)
 
 void_t DownlinkHandler::openedClient()
 {
-  Console::printf("Established downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(addr), port);
+  Log::infof("Established downlink connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
 
   connected = true;
 
@@ -95,7 +95,7 @@ void_t DownlinkHandler::openedClient()
 
 void_t DownlinkHandler::abolishedClient()
 {
-    Console::printf("Could not establish downlink connection with %s:%hu: %s\n", (const char_t*)Socket::inetNtoA(addr), port, (const char_t*)Socket::getErrorString());
+    Log::infof("Could not establish downlink connection with %s:%hu: %s", (const char_t*)Socket::inetNtoA(addr), port, (const char_t*)Socket::getErrorString());
 
     clientHandler.removeDownlink();
 }

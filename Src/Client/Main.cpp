@@ -1,5 +1,6 @@
 
 #include <nstd/Console.h>
+#include <nstd/Log.h>
 #include <nstd/Process.h>
 #include <nstd/Socket/Socket.h>
 
@@ -51,10 +52,10 @@ int_t main(int_t argc, char_t* argv[])
 #ifndef _WIN32
   if(!logFile.isEmpty())
   {
-    Console::printf("Starting as daemon...\n");
+    Log::infof("Starting as daemon...");
     if(!Process::daemonize(logFile))
     {
-      Console::errorf("error: Could not daemonize process: %s\n", (const char_t*)Error::getErrorString());
+      Log::errorf("error: Could not daemonize process: %s", (const char_t*)Error::getErrorString());
       return -1;
     }
   }
@@ -70,7 +71,7 @@ int_t main(int_t argc, char_t* argv[])
   ClientHandler clientHandler(server, addr, uplinkPort, secret);
   if(!clientHandler.connect())
   {
-    Console::errorf("error: Could not connect to %s:%hu: %s\n", (const char_t*)address, uplinkPort, (const char_t*)Socket::getErrorString());
+    Log::errorf("Could not connect to %s:%hu: %s", (const char_t*)address, uplinkPort, (const char_t*)Socket::getErrorString());
     return -1;
   }
   for(Server::Event event; server.poll(event);)
@@ -101,6 +102,6 @@ int_t main(int_t argc, char_t* argv[])
       break;
     }
   }
-  Console::errorf("error: Could not run poll loop: %s\n", (const char_t*)Socket::getErrorString());
+  Log::errorf("Could not run poll loop: %s", (const char_t*)Socket::getErrorString());
   return -1;
 }

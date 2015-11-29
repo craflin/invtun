@@ -1,5 +1,5 @@
 
-#include <nstd/Console.h>
+#include <nstd/Log.h>
 #include <nstd/Debug.h>
 #include <nstd/Socket/Socket.h>
 
@@ -20,7 +20,7 @@ ClientHandler::~ClientHandler()
 bool_t ClientHandler::connect()
 {
   ASSERT(!downlink);
-  Console::printf("Establishing downlink connection with %s:%hu...\n", (const char_t*)Socket::inetNtoA(addr), port);
+  Log::infof("Establishing downlink connection with %s:%hu...", (const char_t*)Socket::inetNtoA(addr), port);
   Server::Handle* handle = server.connect(addr, port, 0);
   if(!handle)
     return false;
@@ -47,7 +47,7 @@ bool_t ClientHandler::removeDownlink()
   if(!downlink)
     return false;
   if(downlink->isConnected())
-    Console::printf("Closed downlink connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(downlink->getAddr()), downlink->getPort());
+    Log::infof("Closed downlink connection with %s:%hu", (const char_t*)Socket::inetNtoA(downlink->getAddr()), downlink->getPort());
   delete downlink;
   downlink = 0;
 
@@ -77,7 +77,7 @@ bool_t ClientHandler::removeEndpoint(uint32_t connectionId)
   EndpointHandler* endpoint = *it;
 
   if(endpoint->isConnected())
-    Console::printf("Closed endpoint connection with %s:%hu\n", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
+    Log::infof("Closed endpoint connection with %s:%hu", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
 
   delete endpoint;
   endpoints.remove(it);

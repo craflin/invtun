@@ -1,5 +1,6 @@
 
 #include <nstd/Console.h>
+#include <nstd/Log.h>
 #include <nstd/Process.h>
 #include <nstd/List.h>
 #include <nstd/Socket/Socket.h>
@@ -58,10 +59,10 @@ int_t main(int_t argc, char_t* argv[])
 #ifndef _WIN32
   if(!logFile.isEmpty())
   {
-    Console::printf("Starting as daemon...\n");
+    Log::infof("Starting as daemon...");
     if(!Process::daemonize(logFile))
     {
-      Console::errorf("error: Could not daemonize process: %s\n", (const char_t*)Error::getErrorString());
+      Log::errorf("Could not daemonize process: %s", (const char_t*)Error::getErrorString());
       return -1;
     }
   }
@@ -77,10 +78,10 @@ int_t main(int_t argc, char_t* argv[])
   uint32_t ip = Socket::inetAddr(listenAddr, &uplinkPort);
   if(!serverHandler.listen(ip, uplinkPort))
   {
-    Console::errorf("error: Could not listen on port %hu: %s\n", uplinkPort, (const char_t*)Socket::getErrorString());
+    Log::errorf("Could not listen on port %hu: %s", uplinkPort, (const char_t*)Socket::getErrorString());
     return -1;
   }
-  Console::printf("Listening for uplink on port %hu...\n", uplinkPort);
+  Log::infof("Listening for uplink on port %hu...", uplinkPort);
   for (List<String>::Iterator i = ports.begin(), end = ports.end(); i != end; ++i)
   {
     String argument = *i;
@@ -97,10 +98,10 @@ int_t main(int_t argc, char_t* argv[])
       mappedPort = port;
     if(!serverHandler.listen(addr, port, *i))
     {
-      Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getErrorString());
+      Log::errorf("Could not listen on port %hu: %s", port, (const char_t*)Socket::getErrorString());
       return -1;
     }
-    Console::printf("Listening for entries on port %hu...\n", port);
+    Log::infof("Listening for entries on port %hu...", port);
   }
 
   for(Server::Event event; server.poll(event);)
@@ -131,6 +132,6 @@ int_t main(int_t argc, char_t* argv[])
       break;
     }
   }
-  Console::errorf("error: Could not run poll loop: %s\n", (const char_t*)Socket::getErrorString());
+  Log::errorf("Could not run poll loop: %s", (const char_t*)Socket::getErrorString());
   return 0;
 }
