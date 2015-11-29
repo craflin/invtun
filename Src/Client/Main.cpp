@@ -68,8 +68,8 @@ int_t main(int_t argc, char_t* argv[])
   server.setSendBufferSize(SEND_BUFFER_SIZE);
   server.setReceiveBufferSize(RECV_BUFFER_SIZE);
   uint32_t addr = Socket::inetAddr(address, &uplinkPort);
-  ClientHandler clientHandler(server, addr, uplinkPort, secret);
-  if(!clientHandler.connect())
+  ClientHandler clientHandler(server);
+  if(!clientHandler.connect(addr, uplinkPort, secret))
   {
     Log::errorf("Could not connect to %s:%hu: %s", (const char_t*)address, uplinkPort, (const char_t*)Socket::getErrorString());
     return -1;

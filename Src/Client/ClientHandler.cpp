@@ -7,7 +7,7 @@
 #include "EndpointHandler.h"
 #include "DownlinkHandler.h"
 
-ClientHandler::ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret) :
+ClientHandler::ClientHandler(Server& server) :
   server(server), addr(addr), port(port), secret(secret), downlink(0), suspendedAlldEnpoints(false), reconnectTimer(0) {}
 
 ClientHandler::~ClientHandler()
@@ -17,14 +17,17 @@ ClientHandler::~ClientHandler()
   delete downlink;
 }
 
-bool_t ClientHandler::connect()
+bool_t ClientHandler::connect(uint32_t addr, uint16_t port, const String& secret)
 {
   ASSERT(!downlink);
-  Log::infof("Establishing downlink connection with %s:%hu...", (const char_t*)Socket::inetNtoA(addr), port);
-  Server::Handle* handle = server.connect(addr, port, 0);
-  if(!handle)
+  downlink = new DownlinkHandler(*this, server);
+  if(!downlink->connect(addr, port))
+  {
+    delete downlink;
+    downlink = 0;
     return false;
-  downlink = new DownlinkHandler(*this, server, *handle, addr, port);
+  }
+  this->secret = secret;
   return true;
 }
 
@@ -32,7 +35,7 @@ void_t ClientHandler::executeTimer()
 {
   //Console::printf("Executed timer\n");
   ASSERT(!downlink);
-  if(connect())
+  if(connect(addr, port, secret))
   {
     if(reconnectTimer)
     {
@@ -46,8 +49,6 @@ bool_t ClientHandler::removeDownlink()
 {
   if(!downlink)
     return false;
-  if(downlink->isConnected())
-    Log::infof("Closed downlink connection with %s:%hu", (const char_t*)Socket::inetNtoA(downlink->getAddr()), downlink->getPort());
   delete downlink;
   downlink = 0;
 
@@ -61,10 +62,12 @@ bool_t ClientHandler::removeDownlink()
 
 bool_t ClientHandler::createEndpoint(uint32_t connectionId, uint16_t port)
 {
-  Server::Handle* handle = server.connect(Socket::loopbackAddr, port, 0);
-  if(!handle)
+  EndpointHandler* endpoint = new EndpointHandler(*this, server, connectionId);
+  if(!endpoint->connect(port))
+  {
+    delete endpoint;
     return false;
-  EndpointHandler* endpoint = new EndpointHandler(*this, server, *handle, connectionId, port);
+  }
   endpoints.append(connectionId, endpoint);
   return true;
 }
@@ -74,12 +77,7 @@ bool_t ClientHandler::removeEndpoint(uint32_t connectionId)
   HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
   if(it == endpoints.end())
     return false;
-  EndpointHandler* endpoint = *it;
-
-  if(endpoint->isConnected())
-    Log::infof("Closed endpoint connection with %s:%hu", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), endpoint->getPort());
-
-  delete endpoint;
+  delete *it;
   endpoints.remove(it);
 
   if(downlink)

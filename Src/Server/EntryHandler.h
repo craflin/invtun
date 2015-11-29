@@ -10,12 +10,12 @@ class ServerHandler;
 class EntryHandler : public Callback
 {
 public:
-  EntryHandler(ServerHandler& serverHandler, Server& server, Server::Handle& handle, uint32_t connectionId, uint32_t addr, uint16_t port);
+  EntryHandler(ServerHandler& serverHandler, Server& server, uint32_t connectionId);
   ~EntryHandler();
 
   uint32_t getConnectionId() const {return connectionId;}
-  uint32_t getAddr() const {return addr;}
-  uint16_t getPort() const {return port;}
+
+  bool_t accept(Server::Handle& listenerHandle);
 
   void_t sendData(const byte_t* data, size_t size);
   void_t suspend();
@@ -26,7 +26,7 @@ public:
 private:
   ServerHandler& serverHandler;
   Server& server;
-  Server::Handle& handle;
+  Server::Handle* handle;
   uint32_t connectionId;
   uint32_t addr;
   uint16_t port;

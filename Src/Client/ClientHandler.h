@@ -16,12 +16,12 @@ class EndpointHandler;
 class ClientHandler : public Callback
 {
 public:
-  ClientHandler(Server& server, uint32_t addr, uint16_t port, const String& secret);
+  ClientHandler(Server& server);
   ~ClientHandler();
 
   const String& getSecret() const {return secret;}
 
-  bool_t connect();
+  bool_t connect(uint32_t addr, uint16_t port, const String& secret);
 
   bool_t removeDownlink();
   bool_t createEndpoint(uint32_t connectionId, uint16_t port);

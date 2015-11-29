@@ -74,9 +74,9 @@ int_t main(int_t argc, char_t* argv[])
   server.setNoDelay(true);
   server.setSendBufferSize(SEND_BUFFER_SIZE);
   server.setReceiveBufferSize(RECV_BUFFER_SIZE);
-  ServerHandler serverHandler(server, secret);
+  ServerHandler serverHandler(server);
   uint32_t ip = Socket::inetAddr(listenAddr, &uplinkPort);
-  if(!serverHandler.listen(ip, uplinkPort))
+  if(!serverHandler.listen(ip, uplinkPort, secret))
   {
     Log::errorf("Could not listen on port %hu: %s", uplinkPort, (const char_t*)Socket::getErrorString());
     return -1;

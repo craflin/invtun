@@ -12,12 +12,10 @@ class ClientHandler;
 class DownlinkHandler : public Callback
 {
 public:
-  DownlinkHandler(ClientHandler& clientHandler, Server& server, Server::Handle& handle, uint32_t addr, uint16_t port);
+  DownlinkHandler(ClientHandler& clientHandler, Server& server);
   ~DownlinkHandler();
 
-  bool_t isConnected() const {return connected;}
-  uint32_t getAddr() const {return addr;}
-  uint16_t getPort() const {return port;}
+  bool_t connect(uint32_t addr, uint16_t port);
 
   bool_t sendDisconnect(uint32_t connectionId);
   bool_t sendData(uint32_t connectionId, byte_t* data, size_t size);
@@ -27,7 +25,7 @@ public:
 private:
   ClientHandler& clientHandler;
   Server& server;
-  Server::Handle& handle;
+  Server::Handle* handle;
   uint32_t addr;
   uint16_t port;
   bool_t connected;

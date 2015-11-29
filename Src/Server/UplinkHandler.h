@@ -12,11 +12,10 @@ class ServerHandler;
 class UplinkHandler : public Callback
 {
 public:
-  UplinkHandler(ServerHandler& serverHandler, Server& server, Server::Handle& handle, uint32_t addr, uint16_t port);
+  UplinkHandler(ServerHandler& serverHandler, Server& server);
   ~UplinkHandler();
 
-  uint32_t getAddr() const {return addr;}
-  uint16_t getPort() const {return port;}
+  bool_t accept(Server::Handle& listenerHandle);
 
   bool_t sendConnect(uint32_t connectionId, uint16_t port);
   bool_t sendDisconnect(uint32_t connectionId);
@@ -27,7 +26,7 @@ public:
 private:
   ServerHandler& serverHandler;
   Server& server;
-  Server::Handle& handle;
+  Server::Handle* handle;
   uint32_t addr;
   uint16_t port;
   bool_t authed;

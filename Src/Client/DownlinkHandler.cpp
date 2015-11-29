@@ -1,5 +1,6 @@
 
 #include <nstd/Log.h>
+#include <nstd/Debug.h>
 #include <nstd/Socket/Socket.h>
 
 #include <lz4.h>
@@ -7,15 +8,29 @@
 #include "DownlinkHandler.h"
 #include "ClientHandler.h"
 
-DownlinkHandler::DownlinkHandler(ClientHandler& clientHandler, Server& server, Server::Handle& handle, uint32_t addr, uint16_t port) :
-  clientHandler(clientHandler), server(server), handle(handle), addr(addr), port(port), connected(false), authed(false)
-{
-  server.setUserData(handle, this);
-}
+DownlinkHandler::DownlinkHandler(ClientHandler& clientHandler, Server& server) :
+  clientHandler(clientHandler), server(server), handle(0), connected(false), authed(false) {}
 
 DownlinkHandler::~DownlinkHandler()
 {
-  server.close(handle);
+  if(handle)
+  {
+    if(connected)
+      Log::infof("Closed downlink connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
+    server.close(*handle);
+  }
+}
+
+bool_t DownlinkHandler::connect(uint32_t addr, uint16_t port)
+{
+  ASSERT(!handle);
+  Log::infof("Establishing downlink connection with %s:%hu...", (const char_t*)Socket::inetNtoA(addr), port);
+  handle = server.connect(addr, port, this);
+  if(!handle)
+    return false;
+  this->addr = addr;
+  this->port = port;
+  return true;
 }
 
 bool_t DownlinkHandler::sendDisconnect(uint32_t connectionId)
@@ -27,7 +42,7 @@ bool_t DownlinkHandler::sendDisconnect(uint32_t connectionId)
   disconnectMessage.size = sizeof(disconnectMessage);
   disconnectMessage.messageType = Protocol::disconnect;
   disconnectMessage.connectionId = connectionId;
-  server.write(handle, (const byte_t*)&disconnectMessage, sizeof(disconnectMessage));
+  server.write(*handle, (const byte_t*)&disconnectMessage, sizeof(disconnectMessage));
   return true;
 }
 
@@ -49,7 +64,7 @@ bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t siz
   dataMessage->messageType = Protocol::data;
   dataMessage->connectionId = connectionId;
   dataMessage->originalSize = size;
-  if(!server.write(handle, (const byte_t*)dataMessage, dataMessage->size))
+  if(!server.write(*handle, (const byte_t*)dataMessage, dataMessage->size))
     clientHandler.suspendAllEndpoints();
   return true;
 }
@@ -63,7 +78,7 @@ bool_t DownlinkHandler::sendSuspend(uint32_t connectionId)
   suspendMessage.size = sizeof(suspendMessage);
   suspendMessage.messageType = Protocol::suspend;
   suspendMessage.connectionId = connectionId;
-  server.write(handle, (const byte_t*)&suspendMessage, sizeof(suspendMessage));
+  server.write(*handle, (const byte_t*)&suspendMessage, sizeof(suspendMessage));
   return true;
 }
 
@@ -76,7 +91,7 @@ bool_t DownlinkHandler::sendResume(uint32_t connectionId)
   resumeMessage.size = sizeof(resumeMessage);
   resumeMessage.messageType = Protocol::resume;
   resumeMessage.connectionId = connectionId;
-  server.write(handle, (const byte_t*)&resumeMessage, sizeof(resumeMessage));
+  server.write(*handle, (const byte_t*)&resumeMessage, sizeof(resumeMessage));
   return true;
 }
 
@@ -90,7 +105,7 @@ void_t DownlinkHandler::openedClient()
   authMessage.size = sizeof(authMessage);
   authMessage.messageType = Protocol::auth;
   Protocol::setString(authMessage.secret, clientHandler.getSecret());
-  server.write(handle, (const byte_t*)&authMessage, sizeof(authMessage));
+  server.write(*handle, (const byte_t*)&authMessage, sizeof(authMessage));
 }
 
 void_t DownlinkHandler::abolishedClient()
@@ -172,7 +187,7 @@ void_t DownlinkHandler::readClient()
   size_t size;
   size_t oldSize = readBuffer.size();
   readBuffer.resize(LZ4_compressBound(RECV_BUFFER_SIZE) + sizeof(Protocol::DataMessage) + 1);
-  if(!server.read(handle, (byte_t*)readBuffer + readBuffer.size(), readBuffer.capacity() - readBuffer.size(), size))
+  if(!server.read(*handle, (byte_t*)readBuffer + readBuffer.size(), readBuffer.capacity() - readBuffer.size(), size))
     return;
   size += oldSize;
   readBuffer.resize(size);

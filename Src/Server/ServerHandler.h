@@ -16,12 +16,12 @@ class UplinkHandler;
 class ServerHandler : public Callback
 {
 public:
-  ServerHandler(Server& server, const String& secret);
+  ServerHandler(Server& server);
   ~ServerHandler();
 
   const String& getSecret() const {return secret;}
 
-  bool_t listen(uint32_t addr, uint16_t port);
+  bool_t listen(uint32_t addr, uint16_t port, const String& secret);
   bool_t listen(uint32_t addr, uint16_t port, uint16_t mappedPort);
 
   bool_t removeUplink();

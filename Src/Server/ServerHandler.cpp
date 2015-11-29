@@ -6,8 +6,8 @@
 #include "UplinkHandler.h"
 #include "EntryHandler.h"
 
-ServerHandler::ServerHandler(Server& server, const String& secret) :
-  server(server), tunnelListener(0), secret(secret), uplink(0), nextConnectionId(1), suspendedAllEntries(false) {}
+ServerHandler::ServerHandler(Server& server) :
+  server(server), tunnelListener(0), uplink(0), nextConnectionId(1), suspendedAllEntries(false) {}
 
 ServerHandler::~ServerHandler()
 {
@@ -20,10 +20,11 @@ ServerHandler::~ServerHandler()
     server.close(*i.key());
 }
 
-bool_t ServerHandler::listen(uint32_t addr, uint16_t port)
+bool_t ServerHandler::listen(uint32_t addr, uint16_t port, const String& secret)
 {
   if(tunnelListener)
     return false;
+  this->secret = secret;
   tunnelListener = server.listen(addr, port, this);
   if(!tunnelListener)
     return false;
@@ -43,7 +44,6 @@ bool_t ServerHandler::removeUplink()
 {
   if(!uplink)
     return false;
-  Log::infof("Closed uplink connection with %s:%hu", (const char_t*)Socket::inetNtoA(uplink->getAddr()), uplink->getPort());
   delete uplink;
   uplink= 0;
 
@@ -58,11 +58,7 @@ bool_t ServerHandler::removeEntry(uint32_t connectionId)
   HashMap<uint32_t, EntryHandler*>::Iterator it = entries.find(connectionId);
   if(it == entries.end())
     return false;
-  EntryHandler* entry = *it;
-
-  Log::infof("Closed entry connection with %s:%hu", (const char_t*)Socket::inetNtoA(entry->getAddr()), entry->getPort());
-
-  delete entry;
+  delete *it;
   entries.remove(it);
 
   if(uplink)
@@ -139,38 +135,46 @@ void_t ServerHandler::resumeAllEntries()
 
 void_t ServerHandler::acceptClient(Server::Handle& listenerHandle)
 {
-  uint32_t addr;
-  uint16_t port;
-  Server::Handle* handle = server.accept(listenerHandle, 0, &addr, &port);
-  if(!handle)
-    return;
-
   if(&listenerHandle == tunnelListener)
   {
     if(uplink)
     {
-      server.close(*handle);
+      Server::Handle* handle = server.accept(listenerHandle, 0);
+      if(handle)
+      {
+        server.close(*handle);
+        return;
+      }
+    }
+
+    uplink = new UplinkHandler(*this, server);
+    if(!uplink->accept(listenerHandle))
+    {
+      delete uplink;
+      uplink = 0;
       return;
     }
-    Log::infof("Accepted uplink connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
-    uplink = new UplinkHandler(*this, server, *handle, addr, port);
   }
   else
   {
     if(!uplink)
     {
-      server.close(*handle);
-      return;
+      Server::Handle* handle = server.accept(listenerHandle, 0);
+      if(handle)
+      {
+        server.close(*handle);
+        return;
+      }
     }
     uint32_t connectionId = nextConnectionId++;
-    uint16_t mappedPort = mapPort(listenerHandle);
-    if(!uplink->sendConnect(connectionId, mappedPort))
+    EntryHandler* entry = new EntryHandler(*this, server, connectionId);
+    if(!entry->accept(listenerHandle))
     {
-      server.close(*handle);
+      delete entry;
       return;
     }
-    Log::infof("Accepted entry connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
-    EntryHandler* entry = new EntryHandler(*this, server, *handle, connectionId, addr, port);
+    uint16_t mappedPort = mapPort(listenerHandle);
+    uplink->sendConnect(connectionId, mappedPort);
     entries.append(connectionId, entry);
   }
 }
