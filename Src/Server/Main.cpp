@@ -3,6 +3,7 @@
 #include <nstd/Log.h>
 #include <nstd/Process.h>
 #include <nstd/List.h>
+#include <nstd/Error.h>
 #include <nstd/Socket/Socket.h>
 
 #include "ServerHandler.h"

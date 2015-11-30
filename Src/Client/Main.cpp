@@ -2,6 +2,7 @@
 #include <nstd/Console.h>
 #include <nstd/Log.h>
 #include <nstd/Process.h>
+#include <nstd/Error.h>
 #include <nstd/Socket/Socket.h>
 
 #include "ClientHandler.h"
