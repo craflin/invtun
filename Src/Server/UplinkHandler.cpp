@@ -184,7 +184,7 @@ void_t UplinkHandler::readClient()
   size_t size;
   size_t oldSize = readBuffer.size();
   readBuffer.resize(LZ4_compressBound(RECV_BUFFER_SIZE) + sizeof(Protocol::DataMessage) + 1);
-  if(!server.read(*handle, (byte_t*)readBuffer + readBuffer.size(), readBuffer.capacity() - readBuffer.size(), size))
+  if(!server.read(*handle, (byte_t*)readBuffer + oldSize, readBuffer.capacity() - oldSize, size))
     return;
   size += oldSize;
   readBuffer.resize(size);
