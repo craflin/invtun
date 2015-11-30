@@ -22,7 +22,7 @@ EndpointHandler::~EndpointHandler()
 bool_t EndpointHandler::connect(uint16_t port)
 {
   ASSERT(!handle);
-  Log::infof("Establishing endpoitn connection with %s:%hu...", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port);
+  Log::infof("Establishing endpoint connection with %s:%hu...", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port);
   handle = server.connect(Socket::loopbackAddr, port, this);
   if(!handle)
     return false;
