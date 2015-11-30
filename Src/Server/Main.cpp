@@ -97,7 +97,7 @@ int_t main(int_t argc, char_t* argv[])
     uint32_t addr = Socket::inetAddr(argument, &port);
     if(!sep)
       mappedPort = port;
-    if(!serverHandler.listen(addr, port, *i))
+    if(!serverHandler.listen(addr, port, mappedPort))
     {
       Log::errorf("Could not listen on port %hu: %s", port, (const char_t*)Socket::getErrorString());
       return -1;

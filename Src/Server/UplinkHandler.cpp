@@ -9,7 +9,7 @@
 #include "ServerHandler.h"
 
 UplinkHandler::UplinkHandler(ServerHandler& serverHandler, Server& server)
-  : serverHandler(serverHandler), server(server), handle(0), addr(addr), port(port), authed(false) {}
+  : serverHandler(serverHandler), server(server), handle(0), authed(false) {}
 
 UplinkHandler::~UplinkHandler()
 {
@@ -27,6 +27,7 @@ bool_t UplinkHandler::accept(Server::Handle& listenerHandle)
   if(!handle)
     return false;
   Log::infof("Accepted uplink connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
+  return true;
 }
 
 bool_t UplinkHandler::sendConnect(uint32_t connectionId, uint16_t port)
