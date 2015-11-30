@@ -8,7 +8,7 @@
 #include "DownlinkHandler.h"
 
 ClientHandler::ClientHandler(Server& server) :
-  server(server), addr(addr), port(port), secret(secret), downlink(0), suspendedAlldEnpoints(false), reconnectTimer(0) {}
+  server(server), downlink(0), suspendedAlldEnpoints(false), reconnectTimer(0) {}
 
 ClientHandler::~ClientHandler()
 {
