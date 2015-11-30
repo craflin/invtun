@@ -20,6 +20,8 @@ ClientHandler::~ClientHandler()
 bool_t ClientHandler::connect(uint32_t addr, uint16_t port, const String& secret)
 {
   ASSERT(!downlink);
+  this->addr = addr;
+  this->port = port;
   downlink = new DownlinkHandler(*this, server);
   if(!downlink->connect(addr, port))
   {
