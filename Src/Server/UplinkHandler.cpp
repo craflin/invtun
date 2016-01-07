@@ -75,7 +75,8 @@ bool_t UplinkHandler::sendData(uint32_t connectionId, const byte_t* data, size_t
   dataMessage->messageType = Protocol::data;
   dataMessage->connectionId = connectionId;
   dataMessage->originalSize = size;
-  if(!server.write(*handle, (const byte_t*)dataMessage, dataMessage->size))
+  size_t postponed;
+  if(server.write(*handle, (const byte_t*)dataMessage, dataMessage->size, &postponed) && postponed)
     serverHandler.suspendAllEntries();
   return true;
 }

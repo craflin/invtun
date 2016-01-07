@@ -64,7 +64,8 @@ bool_t DownlinkHandler::sendData(uint32_t connectionId, byte_t* data, size_t siz
   dataMessage->messageType = Protocol::data;
   dataMessage->connectionId = connectionId;
   dataMessage->originalSize = size;
-  if(!server.write(*handle, (const byte_t*)dataMessage, dataMessage->size))
+  size_t postponed;
+  if(server.write(*handle, (const byte_t*)dataMessage, dataMessage->size, &postponed) && postponed)
     clientHandler.suspendAllEndpoints();
   return true;
 }

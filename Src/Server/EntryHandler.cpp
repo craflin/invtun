@@ -31,7 +31,8 @@ bool_t EntryHandler::accept(Server::Handle& listenerHandle)
 
 void_t EntryHandler::sendData(const byte_t* data, size_t size)
 {
-  if(!server.write(*handle, data, size))
+  size_t postponed;
+  if(server.write(*handle, data, size, &postponed) && postponed)
     serverHandler.sendSuspendEndpoint(connectionId);
 }
 void_t EntryHandler::suspend()
