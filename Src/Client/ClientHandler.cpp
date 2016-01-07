@@ -22,6 +22,7 @@ bool_t ClientHandler::connect(uint32_t addr, uint16_t port, const String& secret
   ASSERT(!downlink);
   this->addr = addr;
   this->port = port;
+  this->secret = secret;
   downlink = new DownlinkHandler(*this, server);
   if(!downlink->connect(addr, port))
   {
@@ -29,7 +30,6 @@ bool_t ClientHandler::connect(uint32_t addr, uint16_t port, const String& secret
     downlink = 0;
     return false;
   }
-  this->secret = secret;
   return true;
 }
 
