@@ -12,12 +12,12 @@ ClientHandler::ClientHandler(Server& server) :
 
 ClientHandler::~ClientHandler()
 {
-  for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
+  for(HashMap<uint32, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
     delete *i;
   delete downlink;
 }
 
-bool_t ClientHandler::connect(uint32_t addr, uint16_t port, const String& secret)
+bool ClientHandler::connect(uint32 addr, uint16 port, const String& secret)
 {
   ASSERT(!downlink);
   this->addr = addr;
@@ -33,7 +33,7 @@ bool_t ClientHandler::connect(uint32_t addr, uint16_t port, const String& secret
   return true;
 }
 
-void_t ClientHandler::executeTimer()
+void ClientHandler::executeTimer()
 {
   //Console::printf("Executed timer\n");
   ASSERT(!downlink);
@@ -47,14 +47,14 @@ void_t ClientHandler::executeTimer()
   }
 }
 
-bool_t ClientHandler::removeDownlink()
+bool ClientHandler::removeDownlink()
 {
   if(!downlink)
     return false;
   delete downlink;
   downlink = 0;
 
-  for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
+  for(HashMap<uint32, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
     delete *i;
   endpoints.clear(),
 
@@ -62,7 +62,7 @@ bool_t ClientHandler::removeDownlink()
   return true;
 }
 
-bool_t ClientHandler::createEndpoint(uint32_t connectionId, uint16_t port)
+bool ClientHandler::createEndpoint(uint32 connectionId, uint16 port)
 {
   EndpointHandler* endpoint = new EndpointHandler(*this, server, connectionId);
   if(!endpoint->connect(port))
@@ -74,9 +74,9 @@ bool_t ClientHandler::createEndpoint(uint32_t connectionId, uint16_t port)
   return true;
 }
 
-bool_t ClientHandler::removeEndpoint(uint32_t connectionId)
+bool ClientHandler::removeEndpoint(uint32 connectionId)
 {
-  HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
+  HashMap<uint32, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
   if(it == endpoints.end())
     return false;
   delete *it;
@@ -87,7 +87,7 @@ bool_t ClientHandler::removeEndpoint(uint32_t connectionId)
   return true;
 }
 
-bool_t ClientHandler::sendDataToDownlink(uint32_t connectionId, byte_t* data, size_t size)
+bool ClientHandler::sendDataToDownlink(uint32 connectionId, byte* data, size_t size)
 {
   if(!downlink)
     return false;
@@ -95,9 +95,9 @@ bool_t ClientHandler::sendDataToDownlink(uint32_t connectionId, byte_t* data, si
   return true;
 }
 
-bool_t ClientHandler::sendDataToEndpoint(uint32_t connectionId, byte_t* data, size_t size)
+bool ClientHandler::sendDataToEndpoint(uint32 connectionId, byte* data, size_t size)
 {
-  HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
+  HashMap<uint32, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
   if(it == endpoints.end())
     return false;
   EndpointHandler* endpoint = *it;
@@ -105,52 +105,52 @@ bool_t ClientHandler::sendDataToEndpoint(uint32_t connectionId, byte_t* data, si
   return true;
 }
 
-void_t ClientHandler::sendSuspendEntry(uint32_t connectionId)
+void ClientHandler::sendSuspendEntry(uint32 connectionId)
 {
   if(!downlink)
     return;
   downlink->sendSuspend(connectionId);
 }
 
-void_t ClientHandler::sendResumeEntry(uint32_t connectionId)
+void ClientHandler::sendResumeEntry(uint32 connectionId)
 {
   if(!downlink)
     return;
   downlink->sendResume(connectionId);
 }
 
-void_t ClientHandler::suspendEndpoint(uint32_t connectionId)
+void ClientHandler::suspendEndpoint(uint32 connectionId)
 {
-  HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
+  HashMap<uint32, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
   if(it == endpoints.end())
     return;
   EndpointHandler* endpoint = *it;
   endpoint->suspendByDownlink();
 }
 
-void_t ClientHandler::resumeEndpoint(uint32_t connectionId)
+void ClientHandler::resumeEndpoint(uint32 connectionId)
 {
-  HashMap<uint32_t, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
+  HashMap<uint32, EndpointHandler*>::Iterator it = endpoints.find(connectionId);
   if(it == endpoints.end())
     return;
   EndpointHandler* endpoint = *it;
   endpoint->resumeByDownlink();
 }
 
-void_t ClientHandler::suspendAllEndpoints()
+void ClientHandler::suspendAllEndpoints()
 {
   if(suspendedAlldEnpoints)
     return;
-  for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
+  for(HashMap<uint32, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
     (*i)->suspend();
   suspendedAlldEnpoints = true;
 }
 
-void_t ClientHandler::resumeAllEndpoints()
+void ClientHandler::resumeAllEndpoints()
 {
   if(!suspendedAlldEnpoints)
     return;
-  for(HashMap<uint32_t, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
+  for(HashMap<uint32, EndpointHandler*>::Iterator i = endpoints.begin(), end = endpoints.end(); i != end; ++i)
     (*i)->resume();
   suspendedAlldEnpoints = false;
 }

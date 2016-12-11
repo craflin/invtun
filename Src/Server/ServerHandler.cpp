@@ -11,16 +11,16 @@ ServerHandler::ServerHandler(Server& server) :
 
 ServerHandler::~ServerHandler()
 {
-  for(HashMap<uint32_t, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
+  for(HashMap<uint32, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
     delete *i;
   delete uplink;
   if(tunnelListener)
     server.close(*tunnelListener);
-  for(HashMap<Server::Handle*, uint16_t>::Iterator i = inboundListeners.begin(), end = inboundListeners.end(); i != end; ++i)
+  for(HashMap<Server::Handle*, uint16>::Iterator i = inboundListeners.begin(), end = inboundListeners.end(); i != end; ++i)
     server.close(*i.key());
 }
 
-bool_t ServerHandler::listen(uint32_t addr, uint16_t port, const String& secret)
+bool ServerHandler::listen(uint32 addr, uint16 port, const String& secret)
 {
   if(tunnelListener)
     return false;
@@ -31,7 +31,7 @@ bool_t ServerHandler::listen(uint32_t addr, uint16_t port, const String& secret)
   return true;
 }
 
-bool_t ServerHandler::listen(uint32_t addr, uint16_t port, uint16_t mappedPort)
+bool ServerHandler::listen(uint32 addr, uint16 port, uint16 mappedPort)
 {
   Server::Handle* handle = server.listen(addr, port, this);
   if(!handle)
@@ -40,22 +40,22 @@ bool_t ServerHandler::listen(uint32_t addr, uint16_t port, uint16_t mappedPort)
   return true;
 }
 
-bool_t ServerHandler::removeUplink()
+bool ServerHandler::removeUplink()
 {
   if(!uplink)
     return false;
   delete uplink;
   uplink= 0;
 
-  for(HashMap<uint32_t, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
+  for(HashMap<uint32, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
     delete *i;
   entries.clear();
   return true;
 }
 
-bool_t ServerHandler::removeEntry(uint32_t connectionId)
+bool ServerHandler::removeEntry(uint32 connectionId)
 {
-  HashMap<uint32_t, EntryHandler*>::Iterator it = entries.find(connectionId);
+  HashMap<uint32, EntryHandler*>::Iterator it = entries.find(connectionId);
   if(it == entries.end())
     return false;
   delete *it;
@@ -66,9 +66,9 @@ bool_t ServerHandler::removeEntry(uint32_t connectionId)
   return true;
 }
 
-bool_t ServerHandler::sendDataToEntry(uint32_t connectionId, byte_t* data, size_t size)
+bool ServerHandler::sendDataToEntry(uint32 connectionId, byte* data, size_t size)
 {
-  HashMap<uint32_t, EntryHandler*>::Iterator it = entries.find(connectionId);
+  HashMap<uint32, EntryHandler*>::Iterator it = entries.find(connectionId);
   if(it == entries.end())
     return false;
   EntryHandler* entry = *it;
@@ -76,64 +76,64 @@ bool_t ServerHandler::sendDataToEntry(uint32_t connectionId, byte_t* data, size_
   return true;
 }
 
-bool_t ServerHandler::sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size)
+bool ServerHandler::sendDataToUplink(uint32 connectionId, byte* data, size_t size)
 {
   if(!uplink)
     return false;
   return uplink->sendData(connectionId, data, size);
 }
 
-void_t ServerHandler::sendSuspendEndpoint(uint32_t connectionId)
+void ServerHandler::sendSuspendEndpoint(uint32 connectionId)
 {
   if(!uplink)
     return;
   uplink->sendSuspend(connectionId);
 }
 
-void_t ServerHandler::sendResumeEndpoint(uint32_t connectionId)
+void ServerHandler::sendResumeEndpoint(uint32 connectionId)
 {
   if(!uplink)
     return;
   uplink->sendResume(connectionId);
 }
 
-void_t ServerHandler::suspendEntry(uint32_t connectionId)
+void ServerHandler::suspendEntry(uint32 connectionId)
 {
-  HashMap<uint32_t, EntryHandler*>::Iterator it = entries.find(connectionId);
+  HashMap<uint32, EntryHandler*>::Iterator it = entries.find(connectionId);
   if(it == entries.end())
     return;
   EntryHandler* entry = *it;
   entry->suspendByUplink();
 }
 
-void_t ServerHandler::resumeEntry(uint32_t connectionId)
+void ServerHandler::resumeEntry(uint32 connectionId)
 {
-  HashMap<uint32_t, EntryHandler*>::Iterator it = entries.find(connectionId);
+  HashMap<uint32, EntryHandler*>::Iterator it = entries.find(connectionId);
   if(it == entries.end())
     return;
   EntryHandler* entry = *it;
   entry->resumeByUplink();
 }
 
-void_t ServerHandler::suspendAllEntries()
+void ServerHandler::suspendAllEntries()
 {
   if(suspendedAllEntries)
     return;
-  for(HashMap<uint32_t, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
+  for(HashMap<uint32, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
     (*i)->suspend();
   suspendedAllEntries = true;
 }
 
-void_t ServerHandler::resumeAllEntries()
+void ServerHandler::resumeAllEntries()
 {
   if(!suspendedAllEntries)
     return;
-  for(HashMap<uint32_t, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
+  for(HashMap<uint32, EntryHandler*>::Iterator i = entries.begin(), end = entries.end(); i != end; ++i)
     (*i)->resume();
   suspendedAllEntries = false;
 }
 
-void_t ServerHandler::acceptClient(Server::Handle& listenerHandle)
+void ServerHandler::acceptClient(Server::Handle& listenerHandle)
 {
   if(&listenerHandle == tunnelListener)
   {
@@ -166,14 +166,14 @@ void_t ServerHandler::acceptClient(Server::Handle& listenerHandle)
         return;
       }
     }
-    uint32_t connectionId = nextConnectionId++;
+    uint32 connectionId = nextConnectionId++;
     EntryHandler* entry = new EntryHandler(*this, server, connectionId);
     if(!entry->accept(listenerHandle))
     {
       delete entry;
       return;
     }
-    uint16_t mappedPort = mapPort(listenerHandle);
+    uint16 mappedPort = mapPort(listenerHandle);
     uplink->sendConnect(connectionId, mappedPort);
     entries.append(connectionId, entry);
   }

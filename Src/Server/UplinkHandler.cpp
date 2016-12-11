@@ -15,22 +15,22 @@ UplinkHandler::~UplinkHandler()
 {
   if(handle)
   {
-    Log::infof("Closed uplink connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
+    Log::infof("Closed uplink connection with %s:%hu", (const char*)Socket::inetNtoA(addr), port);
     server.close(*handle);
   }
 }
 
-bool_t UplinkHandler::accept(Server::Handle& listenerHandle)
+bool UplinkHandler::accept(Server::Handle& listenerHandle)
 {
   ASSERT(!handle);
   handle = server.accept(listenerHandle, this, &addr, &port);
   if(!handle)
     return false;
-  Log::infof("Accepted uplink connection with %s:%hu", (const char_t*)Socket::inetNtoA(addr), port);
+  Log::infof("Accepted uplink connection with %s:%hu", (const char*)Socket::inetNtoA(addr), port);
   return true;
 }
 
-bool_t UplinkHandler::sendConnect(uint32_t connectionId, uint16_t port)
+bool UplinkHandler::sendConnect(uint32 connectionId, uint16 port)
 {
   if(!authed)
     return false;
@@ -40,11 +40,11 @@ bool_t UplinkHandler::sendConnect(uint32_t connectionId, uint16_t port)
   connectMessage.messageType = Protocol::connect;
   connectMessage.connectionId = connectionId;
   connectMessage.port = port;
-  server.write(*handle, (const byte_t*)&connectMessage, sizeof(connectMessage));
+  server.write(*handle, (const byte*)&connectMessage, sizeof(connectMessage));
   return true;
 }
 
-bool_t UplinkHandler::sendDisconnect(uint32_t connectionId)
+bool UplinkHandler::sendDisconnect(uint32 connectionId)
 {
   if(!authed)
     return false;
@@ -53,35 +53,35 @@ bool_t UplinkHandler::sendDisconnect(uint32_t connectionId)
   disconnectMessage.size = sizeof(disconnectMessage);
   disconnectMessage.messageType = Protocol::disconnect;
   disconnectMessage.connectionId = connectionId;
-  server.write(*handle, (const byte_t*)&disconnectMessage, sizeof(disconnectMessage));
+  server.write(*handle, (const byte*)&disconnectMessage, sizeof(disconnectMessage));
   return true;
 }
 
-bool_t UplinkHandler::sendData(uint32_t connectionId, const byte_t* data, size_t size)
+bool UplinkHandler::sendData(uint32 connectionId, const byte* data, size_t size)
 {
   if(!authed)
     return false;
 
   lz4Buffer.resize(sizeof(Protocol::DataMessage) + LZ4_compressBound(size));
-  int compressedSize = LZ4_compress((const char*)data, (char*)(byte_t*)lz4Buffer + sizeof(Protocol::DataMessage), size);
+  int compressedSize = LZ4_compress((const char*)data, (char*)(byte*)lz4Buffer + sizeof(Protocol::DataMessage), size);
   if(compressedSize <= 0)
   {
     serverHandler.removeUplink();
     return false;
   }
 
-  Protocol::DataMessage* dataMessage = (Protocol::DataMessage*)(byte_t*)lz4Buffer;
+  Protocol::DataMessage* dataMessage = (Protocol::DataMessage*)(byte*)lz4Buffer;
   dataMessage->size = sizeof(Protocol::DataMessage) + compressedSize;
   dataMessage->messageType = Protocol::data;
   dataMessage->connectionId = connectionId;
   dataMessage->originalSize = size;
   size_t postponed;
-  if(server.write(*handle, (const byte_t*)dataMessage, dataMessage->size, &postponed) && postponed)
+  if(server.write(*handle, (const byte*)dataMessage, dataMessage->size, &postponed) && postponed)
     serverHandler.suspendAllEntries();
   return true;
 }
 
-bool_t UplinkHandler::sendSuspend(uint32_t connectionId)
+bool UplinkHandler::sendSuspend(uint32 connectionId)
 {
   if(!authed)
     return false;
@@ -90,11 +90,11 @@ bool_t UplinkHandler::sendSuspend(uint32_t connectionId)
   suspendMessage.size = sizeof(suspendMessage);
   suspendMessage.messageType = Protocol::suspend;
   suspendMessage.connectionId = connectionId;
-  server.write(*handle, (const byte_t*)&suspendMessage, sizeof(suspendMessage));
+  server.write(*handle, (const byte*)&suspendMessage, sizeof(suspendMessage));
   return true;
 }
 
-bool_t UplinkHandler::sendResume(uint32_t connectionId)
+bool UplinkHandler::sendResume(uint32 connectionId)
 {
   if(!authed)
     return false;
@@ -103,11 +103,11 @@ bool_t UplinkHandler::sendResume(uint32_t connectionId)
   resumeMessage.size = sizeof(resumeMessage);
   resumeMessage.messageType = Protocol::resume;
   resumeMessage.connectionId = connectionId;
-  server.write(*handle, (const byte_t*)&resumeMessage, sizeof(resumeMessage));
+  server.write(*handle, (const byte*)&resumeMessage, sizeof(resumeMessage));
   return true;
 }
 
-void_t UplinkHandler::handleMessage(Protocol::MessageType messageType, byte_t* data, size_t size)
+void UplinkHandler::handleMessage(Protocol::MessageType messageType, byte* data, size_t size)
 {
   switch(messageType)
   {
@@ -136,7 +136,7 @@ void_t UplinkHandler::handleMessage(Protocol::MessageType messageType, byte_t* d
   }
 }
 
-void_t UplinkHandler::handleAuthMessage(Protocol::AuthMessage& authMessage)
+void UplinkHandler::handleAuthMessage(Protocol::AuthMessage& authMessage)
 {
   if(Protocol::getString(authMessage.secret) != serverHandler.getSecret())
   {
@@ -147,21 +147,21 @@ void_t UplinkHandler::handleAuthMessage(Protocol::AuthMessage& authMessage)
   Protocol::Header response;
   response.size = sizeof(response);
   response.messageType = Protocol::authResponse;
-  server.write(*handle, (const byte_t*)&response, sizeof(response));
+  server.write(*handle, (const byte*)&response, sizeof(response));
 }
 
-void_t UplinkHandler::handleDisconnectMessage(const Protocol::DisconnectMessage& disconnectMessage)
+void UplinkHandler::handleDisconnectMessage(const Protocol::DisconnectMessage& disconnectMessage)
 {
   serverHandler.removeEntry(disconnectMessage.connectionId);
 }
 
-void_t UplinkHandler::handleDataMessage(const Protocol::DataMessage& message, byte_t* data, size_t size)
+void UplinkHandler::handleDataMessage(const Protocol::DataMessage& message, byte* data, size_t size)
 {
   //Console::printf("recvData: compressedSize=%d, originalSize=%d\n", (int)size, (int)message.originalSize);
 
   int originalSize = message.originalSize;
   lz4Buffer.resize(originalSize);
-  if(LZ4_decompress_safe((const char*)data,(char*)(byte_t*)lz4Buffer, size, originalSize) != originalSize)
+  if(LZ4_decompress_safe((const char*)data,(char*)(byte*)lz4Buffer, size, originalSize) != originalSize)
   {
     serverHandler.removeUplink();
     return;
@@ -170,27 +170,27 @@ void_t UplinkHandler::handleDataMessage(const Protocol::DataMessage& message, by
   serverHandler.sendDataToEntry(message.connectionId, lz4Buffer, originalSize);
 }
 
-void_t UplinkHandler::handleSuspendMessage(const Protocol::SuspendMessage& suspendMessage)
+void UplinkHandler::handleSuspendMessage(const Protocol::SuspendMessage& suspendMessage)
 {
   serverHandler.suspendEntry(suspendMessage.connectionId);
 }
 
-void_t UplinkHandler::handleResumeMessage(const Protocol::ResumeMessage& resumeMessage)
+void UplinkHandler::handleResumeMessage(const Protocol::ResumeMessage& resumeMessage)
 {
   serverHandler.resumeEntry(resumeMessage.connectionId);
 }
 
-void_t UplinkHandler::readClient()
+void UplinkHandler::readClient()
 {
   size_t size;
   size_t oldSize = readBuffer.size();
   readBuffer.resize(LZ4_compressBound(RECV_BUFFER_SIZE) + sizeof(Protocol::DataMessage) + 1);
-  if(!server.read(*handle, (byte_t*)readBuffer + oldSize, readBuffer.capacity() - oldSize, size))
+  if(!server.read(*handle, (byte*)readBuffer + oldSize, readBuffer.capacity() - oldSize, size))
     return;
   size += oldSize;
   readBuffer.resize(size);
 
-  byte_t* pos = readBuffer;
+  byte* pos = readBuffer;
   while(size > 0)
   {
     if(size < sizeof(Protocol::Header))
@@ -207,7 +207,7 @@ void_t UplinkHandler::readClient()
     pos += header->size;
     size -= header->size;
   }
-  readBuffer.removeFront(pos - (byte_t*)readBuffer);
+  readBuffer.removeFront(pos - (byte*)readBuffer);
   if(size > LZ4_compressBound(RECV_BUFFER_SIZE) + sizeof(Protocol::DataMessage))
   {
     serverHandler.removeUplink();
@@ -215,12 +215,12 @@ void_t UplinkHandler::readClient()
   }
 }
 
-void_t UplinkHandler::writeClient()
+void UplinkHandler::writeClient()
 {
   serverHandler.resumeAllEntries();
 }
 
-void_t UplinkHandler::closedClient()
+void UplinkHandler::closedClient()
 {
   serverHandler.removeUplink();
 }

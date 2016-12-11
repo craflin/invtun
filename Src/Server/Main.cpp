@@ -8,10 +8,10 @@
 
 #include "ServerHandler.h"
 
-int_t main(int_t argc, char_t* argv[])
+int main(int argc, char* argv[])
 {
   String listenAddr;
-  uint16_t uplinkPort = 1231;
+  uint16 uplinkPort = 1231;
   String secret("Gr33nshoes");
   List<String> ports;
   String logFile;
@@ -25,7 +25,7 @@ int_t main(int_t argc, char_t* argv[])
         {'h', "help", Process::optionFlag},
     };
     Process::Arguments arguments(argc, argv, options);
-    int_t character;
+    int character;
     String argument;
     while(arguments.read(character, argument))
       switch(character)
@@ -43,10 +43,10 @@ int_t main(int_t argc, char_t* argv[])
         ports.append(argument);
         break;
       case '?':
-        Console::errorf("Unknown option: %s.\n", (const char_t*)argument);
+        Console::errorf("Unknown option: %s.\n", (const char*)argument);
         return -1;
       case ':':
-        Console::errorf("Option %s required an argument.\n", (const char_t*)argument);
+        Console::errorf("Option %s required an argument.\n", (const char*)argument);
         return -1;
       default:
         Console::errorf("Usage: %s [-b] [<addr>:]<port>[-<mapped port>] [...]\n\
@@ -63,7 +63,7 @@ int_t main(int_t argc, char_t* argv[])
     Log::infof("Starting as daemon...");
     if(!Process::daemonize(logFile))
     {
-      Log::errorf("Could not daemonize process: %s", (const char_t*)Error::getErrorString());
+      Log::errorf("Could not daemonize process: %s", (const char*)Error::getErrorString());
       return -1;
     }
   }
@@ -76,30 +76,30 @@ int_t main(int_t argc, char_t* argv[])
   server.setSendBufferSize(SEND_BUFFER_SIZE);
   server.setReceiveBufferSize(RECV_BUFFER_SIZE);
   ServerHandler serverHandler(server);
-  uint32_t ip = Socket::inetAddr(listenAddr, &uplinkPort);
+  uint32 ip = Socket::inetAddr(listenAddr, &uplinkPort);
   if(!serverHandler.listen(ip, uplinkPort, secret))
   {
-    Log::errorf("Could not listen on port %hu: %s", uplinkPort, (const char_t*)Socket::getErrorString());
+    Log::errorf("Could not listen on port %hu: %s", uplinkPort, (const char*)Socket::getErrorString());
     return -1;
   }
   Log::infof("Listening for uplink on port %hu...", uplinkPort);
   for (List<String>::Iterator i = ports.begin(), end = ports.end(); i != end; ++i)
   {
     String argument = *i;
-    const char_t* sep = argument.find('-');
-    uint16_t mappedPort = 0;
+    const char* sep = argument.find('-');
+    uint16 mappedPort = 0;
     if(sep)
     {
       mappedPort = String::toUInt(sep + 1);
-      argument.resize(sep - (const char_t*)argument);
+      argument.resize(sep - (const char*)argument);
     }
-    uint16_t port = 0;
-    uint32_t addr = Socket::inetAddr(argument, &port);
+    uint16 port = 0;
+    uint32 addr = Socket::inetAddr(argument, &port);
     if(!sep)
       mappedPort = port;
     if(!serverHandler.listen(addr, port, mappedPort))
     {
-      Log::errorf("Could not listen on port %hu: %s", port, (const char_t*)Socket::getErrorString());
+      Log::errorf("Could not listen on port %hu: %s", port, (const char*)Socket::getErrorString());
       return -1;
     }
     Log::infof("Listening for entries on port %hu...", port);
@@ -133,6 +133,6 @@ int_t main(int_t argc, char_t* argv[])
       break;
     }
   }
-  Log::errorf("Could not run poll loop: %s", (const char_t*)Socket::getErrorString());
+  Log::errorf("Could not run poll loop: %s", (const char*)Socket::getErrorString());
   return 0;
 }

@@ -7,9 +7,9 @@
 
 #include "ClientHandler.h"
 
-int_t main(int_t argc, char_t* argv[])
+int main(int argc, char* argv[])
 {
-  uint16_t uplinkPort = 1231;
+  uint16 uplinkPort = 1231;
   String secret("Gr33nshoes");
   String address;
   String logFile;
@@ -22,7 +22,7 @@ int_t main(int_t argc, char_t* argv[])
         {'h', "help", Process::optionFlag},
     };
     Process::Arguments arguments(argc, argv, options);
-    int_t character;
+    int character;
     String argument;
     while(arguments.read(character, argument))
       switch(character)
@@ -37,10 +37,10 @@ int_t main(int_t argc, char_t* argv[])
         address = argument;
         break;
       case '?':
-        Console::errorf("Unknown option: %s.\n", (const char_t*)argument);
+        Console::errorf("Unknown option: %s.\n", (const char*)argument);
         return -1;
       case ':':
-        Console::errorf("Option %s required an argument.\n", (const char_t*)argument);
+        Console::errorf("Option %s required an argument.\n", (const char*)argument);
         return -1;
       default:
         Console::errorf("Usage: %s [-b] <addr>:<port>\n\
@@ -56,7 +56,7 @@ int_t main(int_t argc, char_t* argv[])
     Log::infof("Starting as daemon...");
     if(!Process::daemonize(logFile))
     {
-      Log::errorf("error: Could not daemonize process: %s", (const char_t*)Error::getErrorString());
+      Log::errorf("error: Could not daemonize process: %s", (const char*)Error::getErrorString());
       return -1;
     }
   }
@@ -68,11 +68,11 @@ int_t main(int_t argc, char_t* argv[])
   server.setNoDelay(true);
   server.setSendBufferSize(SEND_BUFFER_SIZE);
   server.setReceiveBufferSize(RECV_BUFFER_SIZE);
-  uint32_t addr = Socket::inetAddr(address, &uplinkPort);
+  uint32 addr = Socket::inetAddr(address, &uplinkPort);
   ClientHandler clientHandler(server);
   if(!clientHandler.connect(addr, uplinkPort, secret))
   {
-    Log::errorf("Could not connect to %s:%hu: %s", (const char_t*)address, uplinkPort, (const char_t*)Socket::getErrorString());
+    Log::errorf("Could not connect to %s:%hu: %s", (const char*)address, uplinkPort, (const char*)Socket::getErrorString());
     return -1;
   }
   for(Server::Event event; server.poll(event);)
@@ -103,6 +103,6 @@ int_t main(int_t argc, char_t* argv[])
       break;
     }
   }
-  Log::errorf("Could not run poll loop: %s", (const char_t*)Socket::getErrorString());
+  Log::errorf("Could not run poll loop: %s", (const char*)Socket::getErrorString());
   return -1;
 }

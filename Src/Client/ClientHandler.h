@@ -21,30 +21,30 @@ public:
 
   const String& getSecret() const {return secret;}
 
-  bool_t connect(uint32_t addr, uint16_t port, const String& secret);
+  bool connect(uint32 addr, uint16 port, const String& secret);
 
-  bool_t removeDownlink();
-  bool_t createEndpoint(uint32_t connectionId, uint16_t port);
-  bool_t removeEndpoint(uint32_t connectionId);
-  bool_t sendDataToDownlink(uint32_t connectionId, byte_t* data, size_t size);
-  bool_t sendDataToEndpoint(uint32_t connectionId, byte_t* data, size_t size);
-  void_t sendSuspendEntry(uint32_t connectionId);
-  void_t sendResumeEntry(uint32_t connectionId);
-  void_t suspendEndpoint(uint32_t connectionId);
-  void_t resumeEndpoint(uint32_t connectionId);
-  void_t suspendAllEndpoints();
-  void_t resumeAllEndpoints();
+  bool removeDownlink();
+  bool createEndpoint(uint32 connectionId, uint16 port);
+  bool removeEndpoint(uint32 connectionId);
+  bool sendDataToDownlink(uint32 connectionId, byte* data, size_t size);
+  bool sendDataToEndpoint(uint32 connectionId, byte* data, size_t size);
+  void sendSuspendEntry(uint32 connectionId);
+  void sendResumeEntry(uint32 connectionId);
+  void suspendEndpoint(uint32 connectionId);
+  void resumeEndpoint(uint32 connectionId);
+  void suspendAllEndpoints();
+  void resumeAllEndpoints();
 
 private:
   Server& server;
-  uint32_t addr;
-  uint16_t port;
+  uint32 addr;
+  uint16 port;
   String secret;
   DownlinkHandler* downlink;
-  HashMap<uint32_t, EndpointHandler*> endpoints;
-  bool_t suspendedAlldEnpoints;
+  HashMap<uint32, EndpointHandler*> endpoints;
+  bool suspendedAlldEnpoints;
   Server::Handle* reconnectTimer;
 
 private: // Callback
-  virtual void_t executeTimer();
+  virtual void executeTimer();
 };

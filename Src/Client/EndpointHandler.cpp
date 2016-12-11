@@ -6,7 +6,7 @@
 #include "EndpointHandler.h"
 #include "ClientHandler.h"
 
-EndpointHandler::EndpointHandler(ClientHandler& clientHandler, Server& server, uint32_t connectionId)
+EndpointHandler::EndpointHandler(ClientHandler& clientHandler, Server& server, uint32 connectionId)
   : clientHandler(clientHandler), server(server), handle(0), connectionId(connectionId), connected(false), suspended(false), suspendedByDownlink(false) {}
 
 EndpointHandler::~EndpointHandler()
@@ -14,15 +14,15 @@ EndpointHandler::~EndpointHandler()
   if(handle)
   {
     if(connected)
-      Log::infof("Closed endpoint connection with %s:%hu", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port);
+      Log::infof("Closed endpoint connection with %s:%hu", (const char*)Socket::inetNtoA(Socket::loopbackAddr), port);
     server.close(*handle);
   }
 }
 
-bool_t EndpointHandler::connect(uint16_t port)
+bool EndpointHandler::connect(uint16 port)
 {
   ASSERT(!handle);
-  Log::infof("Establishing endpoint connection with %s:%hu...", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port);
+  Log::infof("Establishing endpoint connection with %s:%hu...", (const char*)Socket::inetNtoA(Socket::loopbackAddr), port);
   handle = server.connect(Socket::loopbackAddr, port, this);
   if(!handle)
     return false;
@@ -30,7 +30,7 @@ bool_t EndpointHandler::connect(uint16_t port)
   return true;
 }
 
-void_t EndpointHandler::sendData(byte_t* data, size_t size)
+void EndpointHandler::sendData(byte* data, size_t size)
 {
   if(connected)
   {
@@ -45,35 +45,35 @@ void_t EndpointHandler::sendData(byte_t* data, size_t size)
   }
 }
 
-void_t EndpointHandler::suspend()
+void EndpointHandler::suspend()
 {
   suspended = true;
   server.suspend(*handle);
 }
 
-void_t EndpointHandler::resume()
+void EndpointHandler::resume()
 {
   suspended = false;
   if(!suspendedByDownlink)
     server.resume(*handle);
 }
 
-void_t EndpointHandler::suspendByDownlink()
+void EndpointHandler::suspendByDownlink()
 {
   suspendedByDownlink = true;
   server.suspend(*handle);
 }
 
-void_t EndpointHandler::resumeByDownlink()
+void EndpointHandler::resumeByDownlink()
 {
   suspendedByDownlink = false;
   if(!suspended)
     server.resume(*handle);
 }
 
-void_t EndpointHandler::openedClient()
+void EndpointHandler::openedClient()
 {
-  Log::infof("Established endpoint connection with %s:%hu", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port);
+  Log::infof("Established endpoint connection with %s:%hu", (const char*)Socket::inetNtoA(Socket::loopbackAddr), port);
 
   connected = true;
   if(!sendBuffer.isEmpty())
@@ -84,27 +84,27 @@ void_t EndpointHandler::openedClient()
   }
 }
 
-void_t EndpointHandler::abolishedClient()
+void EndpointHandler::abolishedClient()
 {
-  Log::infof("Could not establish endpoint connection with %s:%hu: %s", (const char_t*)Socket::inetNtoA(Socket::loopbackAddr), port, (const char_t*)Socket::getErrorString());
+  Log::infof("Could not establish endpoint connection with %s:%hu: %s", (const char*)Socket::inetNtoA(Socket::loopbackAddr), port, (const char*)Socket::getErrorString());
 
   clientHandler.removeEndpoint(connectionId);
 }
 
-void_t EndpointHandler::closedClient()
+void EndpointHandler::closedClient()
 {
   clientHandler.removeEndpoint(connectionId);
 }
 
-void_t EndpointHandler::readClient()
+void EndpointHandler::readClient()
 {
-  byte_t buffer[RECV_BUFFER_SIZE];
+  byte buffer[RECV_BUFFER_SIZE];
   size_t size;
   if(server.read(*handle, buffer, sizeof(buffer), size))
     clientHandler.sendDataToDownlink(connectionId, buffer, size);
 }
 
-void_t EndpointHandler::writeClient()
+void EndpointHandler::writeClient()
 {
   clientHandler.sendResumeEntry(connectionId);
 }

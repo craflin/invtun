@@ -21,33 +21,33 @@ public:
 
   const String& getSecret() const {return secret;}
 
-  bool_t listen(uint32_t addr, uint16_t port, const String& secret);
-  bool_t listen(uint32_t addr, uint16_t port, uint16_t mappedPort);
+  bool listen(uint32 addr, uint16 port, const String& secret);
+  bool listen(uint32 addr, uint16 port, uint16 mappedPort);
 
-  bool_t removeUplink();
-  bool_t removeEntry(uint32_t connectionId);
-  bool_t sendDataToEntry(uint32_t connectionId, byte_t* data, size_t size);
-  bool_t sendDataToUplink(uint32_t connectionId, byte_t* data, size_t size);
-  void_t sendSuspendEndpoint(uint32_t connectionId);
-  void_t sendResumeEndpoint(uint32_t connectionId);
-  void_t suspendEntry(uint32_t connectionId);
-  void_t resumeEntry(uint32_t connectionId);
-  void_t suspendAllEntries();
-  void_t resumeAllEntries();
+  bool removeUplink();
+  bool removeEntry(uint32 connectionId);
+  bool sendDataToEntry(uint32 connectionId, byte* data, size_t size);
+  bool sendDataToUplink(uint32 connectionId, byte* data, size_t size);
+  void sendSuspendEndpoint(uint32 connectionId);
+  void sendResumeEndpoint(uint32 connectionId);
+  void suspendEntry(uint32 connectionId);
+  void resumeEntry(uint32 connectionId);
+  void suspendAllEntries();
+  void resumeAllEntries();
 
 private:
   Server& server;
   Server::Handle* tunnelListener;
-  HashMap<Server::Handle*, uint16_t> inboundListeners;
+  HashMap<Server::Handle*, uint16> inboundListeners;
   String secret;
   UplinkHandler* uplink;
-  HashMap<uint32_t, EntryHandler*> entries;
-  uint32_t nextConnectionId;
-  bool_t suspendedAllEntries;
+  HashMap<uint32, EntryHandler*> entries;
+  uint32 nextConnectionId;
+  bool suspendedAllEntries;
 
 private:
-  uint16_t mapPort(Server::Handle& handle) {return *inboundListeners.find(&handle);}
+  uint16 mapPort(Server::Handle& handle) {return *inboundListeners.find(&handle);}
 
 private: // Callback
-  virtual void_t acceptClient(Server::Handle& handle);
+  virtual void acceptClient(Server::Handle& handle);
 };

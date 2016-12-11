@@ -11,34 +11,34 @@ class ClientHandler;
 class EndpointHandler : public Callback
 {
 public:
-  EndpointHandler(ClientHandler& clientHandler, Server& server, uint32_t connectionId);
+  EndpointHandler(ClientHandler& clientHandler, Server& server, uint32 connectionId);
   ~EndpointHandler();
 
-  uint32_t getConnectionId() const {return connectionId;}
+  uint32 getConnectionId() const {return connectionId;}
 
-  bool_t connect(uint16_t port);
+  bool connect(uint16 port);
 
-  void_t sendData(byte_t* data, size_t size);
-  void_t suspend();
-  void_t resume();
-  void_t suspendByDownlink();
-  void_t resumeByDownlink();
+  void sendData(byte* data, size_t size);
+  void suspend();
+  void resume();
+  void suspendByDownlink();
+  void resumeByDownlink();
 
 private:
   ClientHandler& clientHandler;
   Server& server;
   Server::Handle* handle;
-  uint32_t connectionId;
-  uint16_t port;
-  bool_t connected;
+  uint32 connectionId;
+  uint16 port;
+  bool connected;
   Buffer sendBuffer;
-  bool_t suspended;
-  bool_t suspendedByDownlink;
+  bool suspended;
+  bool suspendedByDownlink;
 
 private: // Callback
-  virtual void_t openedClient();
-  virtual void_t abolishedClient();
-  virtual void_t closedClient();
-  virtual void_t readClient();
-  virtual void_t writeClient();
+  virtual void openedClient();
+  virtual void abolishedClient();
+  virtual void closedClient();
+  virtual void readClient();
+  virtual void writeClient();
 };

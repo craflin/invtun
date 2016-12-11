@@ -10,31 +10,31 @@ class ServerHandler;
 class EntryHandler : public Callback
 {
 public:
-  EntryHandler(ServerHandler& serverHandler, Server& server, uint32_t connectionId);
+  EntryHandler(ServerHandler& serverHandler, Server& server, uint32 connectionId);
   ~EntryHandler();
 
-  uint32_t getConnectionId() const {return connectionId;}
+  uint32 getConnectionId() const {return connectionId;}
 
-  bool_t accept(Server::Handle& listenerHandle);
+  bool accept(Server::Handle& listenerHandle);
 
-  void_t sendData(const byte_t* data, size_t size);
-  void_t suspend();
-  void_t resume();
-  void_t suspendByUplink();
-  void_t resumeByUplink();
+  void sendData(const byte* data, size_t size);
+  void suspend();
+  void resume();
+  void suspendByUplink();
+  void resumeByUplink();
 
 private:
   ServerHandler& serverHandler;
   Server& server;
   Server::Handle* handle;
-  uint32_t connectionId;
-  uint32_t addr;
-  uint16_t port;
-  bool_t suspended;
-  bool_t suspendedByUplink;
+  uint32 connectionId;
+  uint32 addr;
+  uint16 port;
+  bool suspended;
+  bool suspendedByUplink;
 
 private: // Server::Client::Listener
-  virtual void_t readClient();
-  virtual void_t writeClient();
-  virtual void_t closedClient();
+  virtual void readClient();
+  virtual void writeClient();
+  virtual void closedClient();
 };
